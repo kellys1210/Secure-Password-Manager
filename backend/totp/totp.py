@@ -27,6 +27,9 @@ class Totp:
         :param username: The username/email to associate with this TOTP secret
         :return: BytesIO buffer containing PNG image data of the QR code
         """
+        if not secret or not username or not self.ISSUER:
+            raise ValueError("Secret, username, or issuer not provided when trying to generated a QR code image.")
+
         totp_uri = self._get_totp_uri(
             secret=secret,
             username=username,
@@ -55,6 +58,8 @@ class Totp:
         :param user_code: The 6-digit code entered by the user
         :return: True if the code is valid, False otherwise
         """
+        if not secret or not user_code:
+            raise ValueError("Secret or User Code not provided when trying to verify TOTP code.")
         totp = pyotp.TOTP(secret)
         return totp.verify(user_code)  # Default 30 second validity
 
