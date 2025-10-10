@@ -1,4 +1,4 @@
-# qr_image_generator.py
+# totp_route.py
 
 """
 QR Code Generator for TOTP Authentication
@@ -14,19 +14,19 @@ import qrcode
 from PIL.Image import Image
 
 
-class QrTotpGenerator:
+class Totp:
     """Generates QR codes for TOTP (Time-based One-Time Password) authentication."""
 
     ISSUER = "Capstone Password Manager"
 
-    def generate_qr_code_image(self, username: str) -> tuple[io.BytesIO, str]:
+    def generate_qr_code_image(self, secret: str, username: str) -> io.BytesIO:
         """
         Generate a QR code image containing a TOTP secret for the given username.
 
+        :param secret: Base32-encoded secret key for TOTP authentication
         :param username: The username/email to associate with this TOTP secret
-        :return: A tuple containing (BytesIO buffer with PNG image data, base32-encoded secret string)
+        :return: BytesIO buffer containing PNG image data of the QR code
         """
-        secret = self._generate_secret()
         totp_uri = self._get_totp_uri(
             secret=secret,
             username=username,
@@ -35,8 +35,16 @@ class QrTotpGenerator:
         image = self._create_qr(totp_uri)
         image_bytes = self._convert_image_to_bytesio(image)
 
-        # TODO: secret must be saved in the dataabse
-        return image_bytes, secret
+        return image_bytes
+
+    @staticmethod
+    def generate_secret() -> str:
+        """
+        Generate a random base32-encoded secret for TOTP.
+
+        :return: A 32-character base32 string suitable for TOTP
+        """
+        return pyotp.random_base32()
 
     @staticmethod
     def verify_totp_code(secret: str, user_code: str) -> bool:
@@ -68,18 +76,10 @@ class QrTotpGenerator:
         )
 
     @staticmethod
-    def _generate_secret() -> str:
-        """
-        Generate a random base32-encoded secret for TOTP.
-
-        :return: A 32-character base32 string suitable for TOTP
-        """
-        return pyotp.random_base32()
-
-    @staticmethod
     def _convert_image_to_bytesio(image: Image) -> io.BytesIO:
         """
-        Convert a PIL Image to a BytesIO buffer in PNG format.
+        Convert a PIL (Python Image Library) Image to a BytesIO buffer in PNG format.
+        BytesIO object is data stored in memory to avoid saving the file to a hard drive.
 
         :param image: PIL Image object to convert
         :return: BytesIO buffer containing PNG image data, positioned at start
