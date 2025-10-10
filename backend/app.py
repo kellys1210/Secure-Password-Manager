@@ -6,6 +6,7 @@ app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = environ.get("DATABASE_URL")
 db = SQLAlchemy(app)
 
+
 # Example table creation:
 class User(db.Model):
     __tablename__ = 'users'
@@ -47,3 +48,4 @@ def create_user():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port = 8080, debug=True)
+    
