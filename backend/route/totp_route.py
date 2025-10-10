@@ -79,7 +79,6 @@ def verify_totp():
         if not secret:
             return jsonify({'error': 'TOTP not set up for this user'}), 404
 
-        # Verify the code
         if totp.verify_totp_code(secret, user_code):
             return jsonify({'message': 'TOTP verified successfully'}), 200
         else:
