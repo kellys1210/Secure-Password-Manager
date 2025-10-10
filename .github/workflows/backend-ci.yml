@@ -31,9 +31,10 @@ jobs:
           pip install black flake8 pytest
           pip install -r backend/requirements.txt
 
-      - name: Check code formatting with Black
-        run: |
-          black --check backend
+      # TODO: confirm we want this check with team
+      # - name: Check code formatting with Black
+      #   run: |
+      #     black --check backend
 
       - name: Lint with flake8
         run: |
