@@ -12,6 +12,13 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = environ.get("DATABASE_URL")
     db.init_app(app)
 
+    # Import blueprints
+    from app.routes.users_routes import users_routes
+    from app.routes.entries_routes import entries_routes
+
+    app.register_blueprint(users_routes)
+    app.register_blueprint(entries_routes)
+
     with app.app_context():
         db.create_all()
 
