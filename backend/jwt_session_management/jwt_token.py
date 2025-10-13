@@ -35,7 +35,7 @@ class JwtToken:
         }
         return self._encode_jwt(header, payload)
 
-    def _validate_jwt(self, encoded_jwt: str) -> bool:
+    def validate_jwt(self, encoded_jwt: str) -> bool:
         """
         Validate a JWT token's signature and expiration.
 

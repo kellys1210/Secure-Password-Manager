@@ -75,7 +75,7 @@ class TestJwtToken:
     def test_validate_jwt_accepts_valid_token(self, jwt_handler):
         """Test that _validate_jwt returns True for a valid token."""
         token = jwt_handler.generate_jwt("user123")
-        assert jwt_handler._validate_jwt(token) is True
+        assert jwt_handler.validate_jwt(token) is True
 
     def test_validate_jwt_rejects_invalid_signature(self, jwt_handler):
         """Test that _validate_jwt returns False for a token with invalid signature."""
@@ -83,7 +83,7 @@ class TestJwtToken:
         # Tamper with the token
         tampered_token = token[:-5] + "wrong"
 
-        assert jwt_handler._validate_jwt(tampered_token) is False
+        assert jwt_handler.validate_jwt(tampered_token) is False
 
     def test_validate_jwt_rejects_expired_token(self, jwt_handler):
         """Test that _validate_jwt returns False for an expired token."""
@@ -94,7 +94,7 @@ class TestJwtToken:
             token = jwt_handler.generate_jwt("user123")
 
         # Now validate it in the present
-        assert jwt_handler._validate_jwt(token) is False
+        assert jwt_handler.validate_jwt(token) is False
 
     def test_validate_jwt_rejects_malformed_token(self, jwt_handler):
         """Test that _validate_jwt returns False for malformed tokens."""
@@ -106,7 +106,7 @@ class TestJwtToken:
         ]
 
         for token in malformed_tokens:
-            assert jwt_handler._validate_jwt(token) is False
+            assert jwt_handler.validate_jwt(token) is False
 
     def test_validate_jwt_rejects_wrong_secret(self, jwt_handler):
         """Test that a token signed with a different secret is rejected."""
@@ -114,7 +114,7 @@ class TestJwtToken:
         payload = {"sub": "user123", "exp": datetime.utcnow() + timedelta(minutes=30)}
         wrong_token = jwt.encode(payload, "wrong_secret", algorithm="HS256")
 
-        assert jwt_handler._validate_jwt(wrong_token) is False
+        assert jwt_handler.validate_jwt(wrong_token) is False
 
     def test_encode_jwt_creates_valid_structure(self, jwt_handler):
         """Test that _encode_jwt creates a properly structured JWT."""
@@ -177,7 +177,7 @@ class TestJwtToken:
 
     def test_validate_jwt_with_none(self, jwt_handler):
         """Test that _validate_jwt handles None input gracefully."""
-        assert jwt_handler._validate_jwt(None) is False
+        assert jwt_handler.validate_jwt(None) is False
 
     @pytest.mark.parametrize("user_id", [
         "user123",
