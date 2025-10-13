@@ -1,5 +1,8 @@
 # entries_routes.py
 
+from flask import Blueprint
+entry_bp = Blueprint("entry", __name__)
+
 """
 -User Add Password
 -User Delete Password
@@ -19,6 +22,3 @@ Output:
     }
 
 """
-
-from flask import Blueprint
-entries_routes = Blueprint("entries_routes", __name__)
