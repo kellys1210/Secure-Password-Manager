@@ -1,4 +1,7 @@
-# database_route.py
+# entries_routes.py
+
+from flask import Blueprint
+entry_bp = Blueprint("entry", __name__)
 
 """
 -User Add Password
