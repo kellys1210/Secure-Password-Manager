@@ -5,7 +5,7 @@ from app import db
 from app.model import User
 from flask import Blueprint, request, jsonify
 
-user_bp = Blueprint('user', __name__)
+user_bp = Blueprint("user", __name__)
 
 """
 Interaction with database container
@@ -16,7 +16,7 @@ Add, Update User:
 """
 
 
-@user_bp.route('/register', methods=['POST'])
+@user_bp.route("/register", methods=["POST"])
 def register_user():
     """
     Register a new user with username and password.
@@ -36,34 +36,31 @@ def register_user():
     """
     try:
         data = request.get_json()
-        new_username = data.get('username')
-        new_password = data.get('password')
+        new_username = data.get("username")
+        new_password = data.get("password")
 
         if not new_username or not new_password:
-            return jsonify({'error': 'Username and password are required'}), 400
+            return jsonify({"error": "Username and password are required"}), 400
 
         # Check if user already exists
         if User.query.filter_by(username=new_username).first():
-            return jsonify({'error': 'Username already exists'}), 409
+            return jsonify({"error": "Username already exists"}), 409
 
         # Create new User object
-        new_user = User(
-            username=new_username,
-            password=new_password
-        )
+        new_user = User(username=new_username, password=new_password)
 
         # Add and save user to PostgreSQL
         db.session.add(new_user)
         db.session.commit()
 
-        return jsonify({'message': "Registration Successful"}), 201
+        return jsonify({"message": "Registration Successful"}), 201
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@user_bp.route('/login', methods=['POST'])
+@user_bp.route("/login", methods=["POST"])
 def login():
     """
     Authenticate a user with username and password.
@@ -81,25 +78,22 @@ def login():
         - 401: Invalid credentials (username not found or password incorrect)
     """
     data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
+    username = data.get("username")
+    password = data.get("password")
 
     # Validate required fields
     if not username or not password:
-        return jsonify({'error': 'Username and password are required'}), 400
+        return jsonify({"error": "Username and password are required"}), 400
 
     # Check if user exists, and password is valid
     user = User.query.filter_by(username=username).first()
     if not user or user.password != password:
-        return jsonify({'error': 'Invalid credentials'}), 401
+        return jsonify({"error": "Invalid credentials"}), 401
 
-    return jsonify({
-        'message': 'Login successful',
-        'user_id': user.id
-    }), 200
+    return jsonify({"message": "Login successful", "user_id": user.id}), 200
 
 
-@user_bp.route('/register', methods=['GET'])
+@user_bp.route("/register", methods=["GET"])
 def get_all_registered_users():
     """
     Get a list of all registered users.
@@ -118,13 +112,10 @@ def get_all_registered_users():
     try:
         users = User.query.all()
 
-        return jsonify(
-            {
-                "id": user.id,
-                "username": user.username
-            }
-            for user in users
-        ), 200
+        return (
+            jsonify({"id": user.id, "username": user.username} for user in users),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500

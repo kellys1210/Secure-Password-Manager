@@ -12,6 +12,7 @@ Source: https://dev.to/francescoxx/python-crud-rest-api-using-flask-sqlalchemy-p
 
 from app import db
 
+
 class User(db.Model):
     """
     User model representing application users with authentication credentials.
@@ -36,7 +37,8 @@ class User(db.Model):
         >>> db.session.add(user)
         >>> db.session.commit()
     """
-    __tablename__ = 'users'
+
+    __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
