@@ -7,9 +7,19 @@ including user registration, login, JWT token generation, and TOTP verification.
 
 import pytest
 import json
-from flask import Flask
-from app import create_app, db
-from app.model import User
+import sys
+import os
+from pathlib import Path
+
+# Add backend to Python path
+backend_path = Path(__file__).parent / "backend"
+sys.path.insert(0, str(backend_path))
+
+# Set environment variable for testing
+os.environ["FLASK_ENV"] = "testing"
+
+from backend.app import create_app, db
+from backend.app.model import User
 
 
 class TestAuthEndpoints:
