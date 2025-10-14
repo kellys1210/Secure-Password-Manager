@@ -44,11 +44,15 @@ def create_app():
     db.init_app(app)
 
     # Import blueprints
-    from app.routes.users_routes import user_bp
-    from app.routes.entries_routes import entry_bp
+    from app.routes.user_routes import user_bp
+    from app.routes.pw_manager_routes import entry_bp
+    from app.routes.jtw_route import jwt_bp
+    from app.routes.totp_route import auth_bp
 
     app.register_blueprint(user_bp)
     app.register_blueprint(entry_bp)
+    app.register_blueprint(jwt_bp)
+    app.register_blueprint(auth_bp)
 
     with app.app_context():
         db.create_all()
