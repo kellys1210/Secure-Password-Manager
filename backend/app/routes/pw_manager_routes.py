@@ -1,6 +1,7 @@
 # pw_manager_routes.py
 
 from flask import Blueprint
+
 entry_bp = Blueprint("entry", __name__)
 
 """

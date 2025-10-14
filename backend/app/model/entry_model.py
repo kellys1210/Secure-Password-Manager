@@ -52,10 +52,11 @@ class Entry(db.Model):
         Passwords should be encrypted before storing in this table. Never store
         plain text passwords.
     """
-    __tablename__ = 'entries'
+
+    __tablename__ = "entries"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     application = db.Column(db.String(120), nullable=False)
     username = db.Column(db.String(80), nullable=False)
     password = db.Column(db.String(255), nullable=False)
