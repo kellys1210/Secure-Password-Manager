@@ -3,13 +3,14 @@
 from app.model import User
 from flask import Blueprint, request, jsonify, send_file
 
-from backend.service import Totp
+from service import Totp
+from app import db
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint("auth", __name__)
 totp = Totp()
 
 
-@auth_bp.route('/totp/setup', methods=['POST'])
+@auth_bp.route("/totp/setup", methods=["POST"])
 def setup_totp():
     """
     Generate and store TOTP secret, then return QR code for authenticator app setup.
@@ -34,15 +35,15 @@ def setup_totp():
     """
     try:
         data = request.get_json()
-        username = data.get('username')
+        username = data.get("username")
 
         if not username:
-            return jsonify({'error': 'Username is required'}), 400
+            return jsonify({"error": "Username is required"}), 400
 
         # Verify user exists
         user = User.query.filter_by(username=username).first()
         if not user:
-            return jsonify({'error': 'User not found'}), 401
+            return jsonify({"error": "User not found"}), 401
 
         # Generate and store TOTP secret
         secret = totp.generate_secret()
@@ -53,16 +54,20 @@ def setup_totp():
         qr_image = totp.generate_qr_code_image(secret, username)
         return send_file(
             qr_image,
-            mimetype='image/png',
+            mimetype="image/png",
             as_attachment=False,
-            download_name=f'totp_qr_{username}.png'
+            download_name=f"totp_qr_{username}.png",
         )
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': 'Failed to generate TOTP setup', 'details': str(e)}), 500
+        return (
+            jsonify({"error": "Failed to generate TOTP setup", "details": str(e)}),
+            500,
+        )
 
-@auth_bp.route('/totp/verify', methods=['POST'])
+
+@auth_bp.route("/totp/verify", methods=["POST"])
 def verify_totp():
     """
     Verify a TOTP code entered by the user.
@@ -83,25 +88,25 @@ def verify_totp():
     """
     try:
         data = request.get_json()
-        username = data.get('username')
-        user_code = data.get('code')
+        username = data.get("username")
+        user_code = data.get("code")
         if not username or not user_code:
-            return jsonify({'error': 'Username and code are required'}), 400
+            return jsonify({"error": "Username and code are required"}), 400
 
         # Check if user exists, and password is valid
         user = User.query.filter_by(username=username).first()
         if not user:
-            return jsonify({'error': 'Username not found'}), 401
+            return jsonify({"error": "Username not found"}), 401
 
         # Verify TOTP with user secret
         secret = user.secret
         if not secret:
-            return jsonify({'error': 'TOTP not set up for this user'}), 404
+            return jsonify({"error": "TOTP not set up for this user"}), 404
 
         if totp.verify_totp_code(secret, user_code):
-            return jsonify({'message': 'TOTP verified successfully'}), 200
+            return jsonify({"message": "TOTP verified successfully"}), 200
         else:
-            return jsonify({'error': 'Invalid TOTP code'}), 401
+            return jsonify({"error": "Invalid TOTP code"}), 401
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
