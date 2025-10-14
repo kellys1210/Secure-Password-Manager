@@ -2,15 +2,13 @@
 
 from flask import Blueprint, request, jsonify
 
-from backend.jwt_session_management import JwtToken
-
-# TODO: Blueprint needs to be registered in main application. Need to figure this out in the future
+from backend.service import JwtToken
 
 jwt_bp = Blueprint('auth', __name__)
 jwt_token = JwtToken()
 
 
-@jwt_bp.route('jwt/setup', methods=['POST'])
+@jwt_bp.route('jwt/token', methods=['POST'])
 def generate_jwt_session_token():
     """
     Generate and return a JWT session token for the specified user.

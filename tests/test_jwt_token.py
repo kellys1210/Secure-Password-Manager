@@ -7,7 +7,7 @@ from unittest.mock import patch
 import jwt
 import pytest
 
-from backend.jwt_session_management import JwtToken
+from backend.service import JwtToken
 
 
 class TestJwtToken:
@@ -53,7 +53,7 @@ class TestJwtToken:
 
         assert decoded["sub"] == user_id
 
-    @patch("backend.jwt_session_management.jwt_token.datetime")
+    @patch("backend.service.jwt_token.datetime")
     def test_generate_jwt_expiration_time(self, mock_datetime, jwt_handler):
         """Test that token expiration is set correctly (30 minutes from issued time)."""
         fixed_time = datetime(2024, 1, 1, 12, 0, 0)
@@ -88,7 +88,7 @@ class TestJwtToken:
     def test_validate_jwt_rejects_expired_token(self, jwt_handler):
         """Test that _validate_jwt returns False for an expired token."""
         # Create a token that's already expired
-        with patch("backend.jwt_session_management.jwt_token.datetime") as mock_datetime:
+        with patch("backend.service.jwt_token.datetime") as mock_datetime:
             past_time = datetime.utcnow() - timedelta(hours=1)
             mock_datetime.utcnow.return_value = past_time
             token = jwt_handler.generate_jwt("user123")

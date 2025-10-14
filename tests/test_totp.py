@@ -16,7 +16,7 @@ import re
 import pyotp
 import pytest
 from PIL import Image
-from backend.totp import Totp
+from backend.service import Totp
 
 
 class TestSecretGeneration:

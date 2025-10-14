@@ -1,10 +1,9 @@
 # totp_route.py
 
+from app.model import User
 from flask import Blueprint, request, jsonify, send_file
 
-from backend.totp import Totp
-
-# TODO: Blueprint needs to be registered in main application. Need to figure this out in the future
+from backend.service import Totp
 
 auth_bp = Blueprint('auth', __name__)
 totp = Totp()
@@ -13,29 +12,44 @@ totp = Totp()
 @auth_bp.route('/totp/setup', methods=['POST'])
 def setup_totp():
     """
-    Generate and return a QR code for TOTP setup.
+    Generate and store TOTP secret, then return QR code for authenticator app setup.
 
-    Expected JSON body:
+    This endpoint creates a new TOTP secret for the user and returns a QR code
+    image that can be scanned by authenticator apps (Google Authenticator, Authy, etc.).
+
+    Expected JSON payload:
         {
             "username": "example_user_name"
         }
 
-    :return: PNG image of QR code on success, or JSON error message with appropriate status code
-    :rtype: Response
-    :raises: 400 if username is missing
-    :raises: 500 if an unexpected error occurs
+    Returns:
+        - 200: PNG image of QR code for TOTP setup
+        - 400: Missing username in request
+        - 401: User not found
+        - 500: Server error during QR code generation
+
+    Note:
+        The TOTP secret is stored in the database but not committed in this endpoint.
+        Ensure db.session.commit() is called after successful TOTP verification.
     """
     try:
         data = request.get_json()
         username = data.get('username')
+
         if not username:
             return jsonify({'error': 'Username is required'}), 400
 
-        # Generate and store secret
-        secret = totp.generate_secret()
-        # TODO: Save secret to database associated with username
+        # Verify user exists
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 401
 
-        # Sent QR Code
+        # Generate and store TOTP secret
+        secret = totp.generate_secret()
+        user.secret = secret
+        db.session.commit()
+
+        # Generate and return QR code image
         qr_image = totp.generate_qr_code_image(secret, username)
         return send_file(
             qr_image,
@@ -45,8 +59,8 @@ def setup_totp():
         )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
+        db.session.rollback()
+        return jsonify({'error': 'Failed to generate TOTP setup', 'details': str(e)}), 500
 
 @auth_bp.route('/totp/verify', methods=['POST'])
 def verify_totp():
@@ -74,8 +88,13 @@ def verify_totp():
         if not username or not user_code:
             return jsonify({'error': 'Username and code are required'}), 400
 
-        # TODO: Retrieve user secret from database via username
-        secret = None
+        # Check if user exists, and password is valid
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return jsonify({'error': 'Username not found'}), 401
+
+        # Verify TOTP with user secret
+        secret = user.secret
         if not secret:
             return jsonify({'error': 'TOTP not set up for this user'}), 404
 
