@@ -1,4 +1,4 @@
-# user_routes.py
+# user_route.py
 # Source: https://flask-sqlalchemy.readthedocs.io/en/stable/quickstart/#define-models
 
 from app import db
@@ -95,7 +95,7 @@ def login():
 
     return jsonify({
         'message': 'Login successful',
-        'user_id': user.id
+        'user_id': user.user_id
     }), 200
 
 
@@ -120,7 +120,7 @@ def get_all_registered_users():
 
         return jsonify(
             {
-                "id": user.id,
+                "id": user.user_id,
                 "username": user.username
             }
             for user in users

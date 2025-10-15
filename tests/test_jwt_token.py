@@ -7,7 +7,7 @@ from unittest.mock import patch
 import jwt
 import pytest
 
-from backend.service import JwtToken
+from backend.app.service import JwtToken
 
 
 class TestJwtToken:
@@ -53,7 +53,7 @@ class TestJwtToken:
 
         assert decoded["sub"] == user_id
 
-    @patch("backend.service.jwt_token.datetime")
+    @patch("backend.app.service.jwt_token.datetime")
     def test_generate_jwt_expiration_time(self, mock_datetime, jwt_handler):
         """Test that token expiration is set correctly (30 minutes from issued time)."""
         fixed_time = datetime(2024, 1, 1, 12, 0, 0)
@@ -88,7 +88,7 @@ class TestJwtToken:
     def test_validate_jwt_rejects_expired_token(self, jwt_handler):
         """Test that _validate_jwt returns False for an expired token."""
         # Create a token that's already expired
-        with patch("backend.service.jwt_token.datetime") as mock_datetime:
+        with patch("backend.app.service.jwt_token.datetime") as mock_datetime:
             past_time = datetime.utcnow() - timedelta(hours=1)
             mock_datetime.utcnow.return_value = past_time
             token = jwt_handler.generate_jwt("user123")
@@ -191,3 +191,67 @@ class TestJwtToken:
         token = jwt_handler.generate_jwt(user_id)
         decoded = jwt.decode(token, jwt_handler.SECRET_KEY, algorithms=["HS256"])
         assert decoded["sub"] == user_id
+
+    def test_get_username_from_valid_token(self, jwt_handler):
+        """Test extracting username from a valid JWT token."""
+        username = "testuser"
+        token = jwt_handler.generate_jwt(username)
+
+        extracted_username = jwt_handler.get_username_from_jwt(token)
+
+        assert extracted_username == username
+
+    def test_get_username_from_expired_token(self, jwt_handler):
+        """Test extracting username from an expired token returns None."""
+        username = "testuser"
+        # Create a token that's already expired
+        header = {"alg": jwt_handler.ALG, "typ": "JWT"}
+        payload = {
+            "sub": username,
+            "iat": datetime.utcnow() - timedelta(minutes=60),
+            "exp": datetime.utcnow() - timedelta(minutes=30)
+        }
+        expired_token = jwt_handler._encode_jwt(header, payload)
+
+        extracted_username = jwt_handler.get_username_from_jwt(expired_token)
+
+        assert extracted_username is None
+
+    def test_get_username_from_invalid_token(self, jwt_handler):
+        """Test extracting username from an invalid token returns None."""
+        invalid_token = "invalid.token.string"
+
+        extracted_username = jwt_handler.get_username_from_jwt(invalid_token)
+
+        assert extracted_username is None
+
+    def test_get_username_from_malformed_token(self, jwt_handler):
+        """Test extracting username from a malformed token returns None."""
+        malformed_token = "not-a-jwt"
+
+        extracted_username = jwt_handler.get_username_from_jwt(malformed_token)
+
+        assert extracted_username is None
+
+    def test_get_username_from_token_with_wrong_signature(self, jwt_handler):
+        """Test extracting username from a token signed with wrong key returns None."""
+        username = "testuser"
+        # Create token with a different secret
+        wrong_token = jwt.encode(
+            {"sub": username, "exp": datetime.utcnow() + timedelta(minutes=30)},
+            "wrong_secret_key",
+            algorithm="HS256"
+        )
+
+        extracted_username = jwt_handler.get_username_from_jwt(wrong_token)
+
+        assert extracted_username is None
+
+    def test_get_username_with_special_characters(self, jwt_handler):
+        """Test extracting username containing special characters."""
+        username = "test.user+123@example"
+        token = jwt_handler.generate_jwt(username)
+
+        extracted_username = jwt_handler.get_username_from_jwt(token)
+
+        assert extracted_username == username

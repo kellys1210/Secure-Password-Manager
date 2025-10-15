@@ -22,7 +22,7 @@ application = create_app()
 
 @application.route('/')
 def index():
-    return ":)"
+    return "You're in the backend :)"
 
 
 if __name__ == '__main__':

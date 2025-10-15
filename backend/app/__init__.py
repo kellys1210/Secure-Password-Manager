@@ -44,13 +44,20 @@ def create_app():
     db.init_app(app)
 
     # Import blueprints
-    from app.routes.users_routes import user_bp
-    from app.routes.entries_routes import entry_bp
+    from app.routes.user_route import user_bp
+    from app.routes.totp_route import totp_bp
+    from app.routes.pw_manager_route import pw_manager_bp
 
     app.register_blueprint(user_bp)
-    app.register_blueprint(entry_bp)
+    app.register_blueprint(totp_bp)
+    app.register_blueprint(pw_manager_bp)
 
     with app.app_context():
+        """
+        User must be initialized before Entry
+        """
+        from app.model import User
+        from app.model import Entry
         db.create_all()
 
     return app

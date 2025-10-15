@@ -1,8 +1,8 @@
-# jtw_route.py
+# jwt_route.py
 
 from flask import Blueprint, request, jsonify
 
-from backend.service import JwtToken
+from backend.app.service import JwtToken
 
 jwt_bp = Blueprint('auth', __name__)
 jwt_token = JwtToken()

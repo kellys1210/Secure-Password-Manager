@@ -22,13 +22,11 @@ class Entry(db.Model):
     associated credentials.
 
     Attributes:
-        id (int): Primary key, auto-incremented unique identifier for each entry.
+        entry_id (int): Primary key, auto-incremented unique identifier for each entry.
         user_id (int): Foreign key referencing the User who owns this entry.
                       Links to users.id table. Required field.
         application (str): Name of the application or service (e.g., "Gmail", "GitHub").
                           Maximum 120 characters. Required field.
-        username (str): Username or email for the application. Maximum 80 characters.
-                       Required field.
         password (str): Encrypted password for the application. Maximum 255 characters.
                        Should be encrypted before storage. Required field.
 
@@ -42,7 +40,6 @@ class Entry(db.Model):
         >>> entry = Entry(
         ...     user_id=1,
         ...     application='GitHub',
-        ...     username='john_doe',
         ...     password=encrypted_password
         ... )
         >>> db.session.add(entry)
@@ -54,10 +51,9 @@ class Entry(db.Model):
     """
     __tablename__ = 'entries'
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    entry_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     application = db.Column(db.String(120), nullable=False)
-    username = db.Column(db.String(80), nullable=False)
     password = db.Column(db.String(255), nullable=False)
 
     def __str__(self):
@@ -77,4 +73,4 @@ class Entry(db.Model):
         Returns:
             str: Representation showing entry ID, user ID, and application.
         """
-        return f"<Entry(id={self.id}, user_id={self.user_id}, application='{self.application}')>"
+        return f"<Entry(id={self.entry_id}, user_id={self.user_id}, application='{self.application}')>"

@@ -3,13 +3,13 @@
 from app.model import User
 from flask import Blueprint, request, jsonify, send_file
 
-from backend.service import Totp
+from app.service import Totp, JwtToken
 
-auth_bp = Blueprint('auth', __name__)
+totp_bp = Blueprint('totp', __name__)
 totp = Totp()
+jwt_token = JwtToken()
 
-
-@auth_bp.route('/totp/setup', methods=['POST'])
+@totp_bp.route('/setup', methods=['POST'])
 def setup_totp():
     """
     Generate and store TOTP secret, then return QR code for authenticator app setup.
@@ -62,7 +62,8 @@ def setup_totp():
         db.session.rollback()
         return jsonify({'error': 'Failed to generate TOTP setup', 'details': str(e)}), 500
 
-@auth_bp.route('/totp/verify', methods=['POST'])
+
+@totp_bp.route('/verify', methods=['POST'])
 def verify_totp():
     """
     Verify a TOTP code entered by the user.
@@ -74,12 +75,24 @@ def verify_totp():
         }
 
     :return: JSON with verification result and appropriate status code
-             - 200: TOTP verified successfully
+             - 200: TOTP verified successfully (includes JWT token)
              - 400: Missing username or code
-             - 401: Invalid TOTP code
+             - 401: Username not found or invalid TOTP code
              - 404: TOTP not set up for user
              - 500: Server error
     :rtype: Response
+
+    Success response (200):
+        {
+            "message": "TOTP verified successfully",
+            "jwt": "<token_string>"
+        }
+
+    Error responses:
+        - 400: {"error": "Username and code are required"}
+        - 401: {"error": "Username not found"} or {"error": "Invalid TOTP code"}
+        - 404: {"error": "TOTP not set up for this user"}
+        - 500: {"error": "<error_message>"}
     """
     try:
         data = request.get_json()
@@ -98,8 +111,12 @@ def verify_totp():
         if not secret:
             return jsonify({'error': 'TOTP not set up for this user'}), 404
 
+        # Verify TOTP Code, return JWT session token if successful
         if totp.verify_totp_code(secret, user_code):
-            return jsonify({'message': 'TOTP verified successfully'}), 200
+            return jsonify({
+                'message': 'TOTP verified successfully',
+                'jwt': jwt_token.generate_jwt(username)
+            }), 200
         else:
             return jsonify({'error': 'Invalid TOTP code'}), 401
 

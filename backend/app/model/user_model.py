@@ -12,6 +12,7 @@ Source: https://dev.to/francescoxx/python-crud-rest-api-using-flask-sqlalchemy-p
 
 from app import db
 
+
 class User(db.Model):
     """
     User model representing application users with authentication credentials.
@@ -21,7 +22,7 @@ class User(db.Model):
     by their username.
 
     Attributes:
-        id (int): Primary key, auto-incremented unique identifier for each user.
+        user_id (int): Primary key, auto-incremented unique identifier for each user.
         username (str): Unique username for login, maximum 80 characters.
         password (str): Hashed password for authentication, maximum 255 characters.
                        Should never store plain text passwords.
@@ -38,7 +39,7 @@ class User(db.Model):
     """
     __tablename__ = 'users'
 
-    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     secret = db.Column(db.String(255), nullable=True)
@@ -59,4 +60,4 @@ class User(db.Model):
         Returns:
             str: Representation showing user ID and username.
         """
-        return f"<User(id={self.id}, username='{self.username}')>"
+        return f"<User(id={self.user_id}, username='{self.username}')>"

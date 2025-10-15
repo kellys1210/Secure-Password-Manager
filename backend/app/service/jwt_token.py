@@ -17,11 +17,11 @@ class JwtToken:
     ALG = "HS256"
     TOKEN_EXPIRATION_MINUTES = 30
 
-    def generate_jwt(self, user_id: str) -> str:
+    def generate_jwt(self, username: str) -> str:
         """
         Generate a JWT token for a given user.
 
-        :param user_id: Unique identifier for the user
+        :param username: Unique identifier for the user
         :return: Encoded JWT token as a string
         """
         header = {
@@ -29,7 +29,7 @@ class JwtToken:
             "typ": "JWT"
         }
         payload = {
-            "sub": user_id,
+            "sub": username,
             "iat": datetime.utcnow(),
             "exp": datetime.utcnow() + timedelta(minutes=self.TOKEN_EXPIRATION_MINUTES)
         }
@@ -49,6 +49,23 @@ class JwtToken:
         except:
             return False
 
+    def get_username_from_jwt(self, encoded_jwt: str) -> str | None:
+        """
+        Extract the username from a JWT token.
+
+        :param encoded_jwt: The encoded JWT token
+        :return: Username if token is valid, None otherwise
+        """
+        try:
+            decoded = jwt.decode(
+                encoded_jwt,
+                self.SECRET_KEY,
+                algorithms=[self.ALG]
+            )
+            return decoded.get("sub")
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+            return None
+
     def _encode_jwt(self, header: dict, payload: dict) -> str:
         """
         Encode header and payload into a JWT token.
@@ -63,3 +80,5 @@ class JwtToken:
             algorithm="HS256",
             headers=header
         )
+
+
