@@ -5,7 +5,10 @@ from app import db
 from app.model import User
 from flask import Blueprint, request, jsonify
 
+from backend.app.service import Argon2Service
+
 user_bp = Blueprint('user', __name__)
+argon2 = Argon2Service()
 
 """
 Interaction with database container
@@ -46,10 +49,13 @@ def register_user():
         if User.query.filter_by(username=new_username).first():
             return jsonify({'error': 'Username already exists'}), 409
 
+        # Create master password hash
+        new_password_hash = argon2.hash_password(new_password)
+
         # Create new User object
         new_user = User(
             username=new_username,
-            password=new_password
+            password=new_password_hash
         )
 
         # Add and save user to PostgreSQL
@@ -88,10 +94,19 @@ def login():
     if not username or not password:
         return jsonify({'error': 'Username and password are required'}), 400
 
-    # Check if user exists, and password is valid
+    # Check if user exists
     user = User.query.filter_by(username=username).first()
-    if not user or user.password != password:
+    if not user:
         return jsonify({'error': 'Invalid credentials'}), 401
+
+    # Verify password (plain password against stored hash)
+    if not argon2.verify_hash(user.password, password):
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    # Check if stored hash needs to be rehashed with new parameters
+    if argon2.check_needs_rehash(user.password):
+        user.password = argon2.hash_password(password)
+        db.session.commit()
 
     return jsonify({
         'message': 'Login successful',

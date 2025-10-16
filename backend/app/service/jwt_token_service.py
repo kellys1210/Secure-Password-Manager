@@ -1,4 +1,4 @@
-# jwt_token.py
+# jwt_token_service.py
 #  https://www.youtube.com/watch?v=7Q17ubqLfaM
 
 
@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import jwt
 
 
-class JwtToken:
+class JwtTokenService:
     """
     Handles JWT token generation and validation for user authentication.
 

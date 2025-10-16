@@ -14,7 +14,7 @@ import qrcode
 from PIL.Image import Image
 
 
-class Totp:
+class TotpService:
     """Generates QR codes for TOTP (Time-based One-Time Password) authentication."""
 
     ISSUER = "Capstone Password Manager"

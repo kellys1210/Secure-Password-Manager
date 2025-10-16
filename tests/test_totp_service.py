@@ -1,4 +1,4 @@
-# test_totp.py
+# test_totp_service.py
 
 """
 Unit tests for the TOTP QR Code Generator module.
@@ -16,7 +16,7 @@ import re
 import pyotp
 import pytest
 from PIL import Image
-from backend.app.service import Totp
+from backend.app.service import TotpService
 
 
 class TestSecretGeneration:
@@ -24,23 +24,23 @@ class TestSecretGeneration:
 
     def test_generate_secret_returns_string(self):
         """Test that generate_secret returns a string."""
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
         assert isinstance(secret, str)
 
     def test_generate_secret_length(self):
         """Test that generated secret is 32 characters long."""
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
         assert len(secret) == 32
 
     def test_generate_secret_is_base32(self):
         """Test that generated secret contains only valid base32 characters."""
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
         # Base32 alphabet: A-Z and 2-7
         assert re.match(r'^[A-Z2-7]+$', secret)
 
     def test_generate_secret_is_unique(self):
         """Test that multiple calls generate different secrets."""
-        secrets = {Totp.generate_secret() for _ in range(10)}
+        secrets = {TotpService.generate_secret() for _ in range(10)}
         assert len(secrets) == 10  # All should be unique
 
 
@@ -57,21 +57,21 @@ class TestTotpVerification:
         totp = pyotp.TOTP(valid_secret)
         current_code = totp.now()
 
-        assert Totp.verify_totp_code(valid_secret, current_code) is True
+        assert TotpService.verify_totp_code(valid_secret, current_code) is True
 
     def test_verify_invalid_code(self, valid_secret):
         """Test that an invalid TOTP code is rejected."""
         invalid_code = "000000"
-        assert Totp.verify_totp_code(valid_secret, invalid_code) is False
+        assert TotpService.verify_totp_code(valid_secret, invalid_code) is False
 
     def test_verify_wrong_length_code(self, valid_secret):
         """Test that codes with wrong length are rejected."""
-        assert Totp.verify_totp_code(valid_secret, "123") is False
-        assert Totp.verify_totp_code(valid_secret, "123456789") is False
+        assert TotpService.verify_totp_code(valid_secret, "123") is False
+        assert TotpService.verify_totp_code(valid_secret, "123456789") is False
 
     def test_verify_non_numeric_code(self, valid_secret):
         """Test that non-numeric codes are rejected."""
-        assert Totp.verify_totp_code(valid_secret, "abcdef") is False
+        assert TotpService.verify_totp_code(valid_secret, "abcdef") is False
 
     def test_verify_expired_code(self, valid_secret):
         """Test that an expired code is rejected."""
@@ -79,7 +79,7 @@ class TestTotpVerification:
         # Get a code from 2 minutes ago (outside validity window)
         import time
         old_code = totp.at(time.time() - 120)
-        assert Totp.verify_totp_code(valid_secret, old_code) is False
+        assert TotpService.verify_totp_code(valid_secret, old_code) is False
 
 
 class TestTotpUri:
@@ -88,7 +88,7 @@ class TestTotpUri:
     @pytest.fixture
     def totp_instance(self):
         """Fixture providing a Totp instance."""
-        return Totp()
+        return TotpService()
 
     def test_get_totp_uri_format(self, totp_instance):
         """Test that URI follows the correct format."""
@@ -121,7 +121,7 @@ class TestQrCodeGeneration:
     @pytest.fixture
     def totp_instance(self):
         """Fixture providing a Totp instance."""
-        return Totp()
+        return TotpService()
 
     def test_create_qr_returns_image(self, totp_instance):
         """Test that _create_qr returns a qrcode PilImage."""
@@ -150,22 +150,22 @@ class TestImageConversion:
 
     def test_convert_image_to_bytesio_returns_bytesio(self, sample_image):
         """Test that conversion returns a BytesIO object."""
-        result = Totp._convert_image_to_bytesio(sample_image)
+        result = TotpService._convert_image_to_bytesio(sample_image)
         assert isinstance(result, io.BytesIO)
 
     def test_convert_image_bytesio_not_empty(self, sample_image):
         """Test that converted BytesIO contains data."""
-        result = Totp._convert_image_to_bytesio(sample_image)
+        result = TotpService._convert_image_to_bytesio(sample_image)
         assert len(result.getvalue()) > 0
 
     def test_convert_image_bytesio_position(self, sample_image):
         """Test that BytesIO position is at start."""
-        result = Totp._convert_image_to_bytesio(sample_image)
+        result = TotpService._convert_image_to_bytesio(sample_image)
         assert result.tell() == 0
 
     def test_convert_image_is_valid_png(self, sample_image):
         """Test that converted data is valid PNG format."""
-        result = Totp._convert_image_to_bytesio(sample_image)
+        result = TotpService._convert_image_to_bytesio(sample_image)
         # PNG files start with specific magic bytes
         assert result.getvalue().startswith(b'\x89PNG')
 
@@ -176,11 +176,11 @@ class TestGenerateQrCodeImage:
     @pytest.fixture
     def totp_instance(self):
         """Fixture providing a Totp instance."""
-        return Totp()
+        return TotpService()
 
     def test_generate_qr_code_image_returns_bytesio(self, totp_instance):
         """Test that generate_qr_code_image returns BytesIO."""
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
         username = "test@example.com"
 
         result = totp_instance.generate_qr_code_image(secret, username)
@@ -189,7 +189,7 @@ class TestGenerateQrCodeImage:
 
     def test_generate_qr_code_image_contains_data(self, totp_instance):
         """Test that generated QR code contains image data."""
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
         username = "test@example.com"
 
         result = totp_instance.generate_qr_code_image(secret, username)
@@ -198,7 +198,7 @@ class TestGenerateQrCodeImage:
 
     def test_generate_qr_code_image_is_valid_png(self, totp_instance):
         """Test that generated QR code is valid PNG."""
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
         username = "test@example.com"
 
         result = totp_instance.generate_qr_code_image(secret, username)
@@ -207,7 +207,7 @@ class TestGenerateQrCodeImage:
 
     def test_generate_qr_code_can_be_opened_as_image(self, totp_instance):
         """Test that generated QR code can be opened as PIL Image."""
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
         username = "test@example.com"
 
         result = totp_instance.generate_qr_code_image(secret, username)
@@ -224,7 +224,7 @@ class TestGenerateQrCodeImage:
     ])
     def test_generate_qr_code_with_different_usernames(self, totp_instance, username):
         """Test QR code generation with various username formats."""
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
 
         result = totp_instance.generate_qr_code_image(secret, username)
 
@@ -234,7 +234,7 @@ class TestGenerateQrCodeImage:
     def test_generate_qr_code_integration(self, totp_instance):
         """Full integration test: generate secret, create QR, verify code."""
         # Generate secret
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
         username = "test@example.com"
 
         # Generate QR code
@@ -244,7 +244,7 @@ class TestGenerateQrCodeImage:
         # Verify a TOTP code generated from the same secret
         totp = pyotp.TOTP(secret)
         current_code = totp.now()
-        assert Totp.verify_totp_code(secret, current_code) is True
+        assert TotpService.verify_totp_code(secret, current_code) is True
 
 class TestEdgeCases:
     """Tests for edge cases and error handling."""
@@ -252,28 +252,28 @@ class TestEdgeCases:
     @pytest.fixture
     def totp_instance(self):
         """Fixture providing a Totp instance."""
-        return Totp()
+        return TotpService()
 
     def test_verify_empty_secret(self):
         """Test verification with empty secret."""
         with pytest.raises(ValueError):
-            Totp.verify_totp_code("", "123456")
+            TotpService.verify_totp_code("", "123456")
 
     def test_verify_empty_code(self):
         """Test verification with empty code."""
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
         with pytest.raises(ValueError):
-            Totp.verify_totp_code(secret, "")
+            TotpService.verify_totp_code(secret, "")
 
     def test_generate_qr_with_empty_username(self, totp_instance):
         """Test QR generation with empty username."""
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
         with pytest.raises(ValueError):
             totp_instance.generate_qr_code_image(secret, "")
 
     def test_generate_qr_with_very_long_username(self, totp_instance):
         """Test QR generation with very long username."""
-        secret = Totp.generate_secret()
+        secret = TotpService.generate_secret()
         username = "x" * 200
         result = totp_instance.generate_qr_code_image(secret, username)
         assert isinstance(result, io.BytesIO)

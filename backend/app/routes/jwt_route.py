@@ -2,10 +2,10 @@
 
 from flask import Blueprint, request, jsonify
 
-from backend.app.service import JwtToken
+from backend.app.service import JwtTokenService
 
 jwt_bp = Blueprint('auth', __name__)
-jwt_token = JwtToken()
+jwt_token = JwtTokenService()
 
 
 @jwt_bp.route('jwt/token', methods=['POST'])

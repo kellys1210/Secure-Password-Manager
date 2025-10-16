@@ -1,4 +1,4 @@
-# test_jwt_token.py
+# test_jwt_token_service.py
 
 import time
 from datetime import datetime, timedelta
@@ -7,7 +7,7 @@ from unittest.mock import patch
 import jwt
 import pytest
 
-from backend.app.service import JwtToken
+from backend.app.service import JwtTokenService
 
 
 class TestJwtToken:
@@ -16,7 +16,7 @@ class TestJwtToken:
     @pytest.fixture
     def jwt_handler(self):
         """Fixture to provide a fresh JwtToken instance for each test."""
-        return JwtToken()
+        return JwtTokenService()
 
     def test_generate_jwt_returns_string(self, jwt_handler):
         """Test that generate_jwt returns a string token."""
