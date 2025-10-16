@@ -4,10 +4,10 @@ from app import db
 from app.model import Entry, User
 from flask import Blueprint, request, jsonify
 
-from app.service import JwtToken
+from app.service import JwtTokenService
 
 pw_manager_bp = Blueprint('pw_manager', __name__)
-jwt_token = JwtToken()
+jwt_token = JwtTokenService()
 
 
 @pw_manager_bp.route('/password', methods=['PUT'])

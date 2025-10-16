@@ -3,12 +3,12 @@
 from app.model import User
 from flask import Blueprint, request, jsonify, send_file
 
-from app.service import Totp, JwtToken
+from app.service import TotpService, JwtTokenService
 from app import db
 
 totp_bp = Blueprint("totp", __name__)
-totp = Totp()
-jwt_token = JwtToken()
+totp = TotpService()
+jwt_token = JwtTokenService()
 
 
 @totp_bp.route("/setup", methods=["POST"])
