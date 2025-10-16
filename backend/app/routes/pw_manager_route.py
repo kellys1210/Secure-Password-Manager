@@ -1,16 +1,16 @@
 # pw_manager_route.py
 
-from app import db
-from app.model import Entry, User
+from backend.app import db
+from backend.app.model import Entry, User
 from flask import Blueprint, request, jsonify
 
-from app.service import JwtTokenService
+from backend.app.service import JwtTokenService
 
-pw_manager_bp = Blueprint('pw_manager', __name__)
+pw_manager_bp = Blueprint("pw_manager", __name__)
 jwt_token = JwtTokenService()
 
 
-@pw_manager_bp.route('/password', methods=['PUT'])
+@pw_manager_bp.route("/password", methods=["PUT"])
 def add_update_password():
     """
     Add or update a password entry for an application.
@@ -31,56 +31,62 @@ def add_update_password():
     """
     try:
         data = request.get_json()
-        jwt = data.get('jwt')
-        application = data.get('application')
-        application_username = data.get('application_username')
-        password = data.get('password')
+        jwt = data.get("jwt")
+        application = data.get("application")
+        application_username = data.get("application_username")
+        password = data.get("password")
 
         # Validate JWT token
         if not jwt or not jwt_token.validate_jwt(jwt):
-            return jsonify({'error': 'JWT token expired or invalid'}), 400
+            return jsonify({"error": "JWT token expired or invalid"}), 400
 
         # Validate required fields
         if not application or not application_username or not password:
-            return jsonify({'error': 'Application name, application username, and password are required'}), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Application name, application username, and password are required"
+                    }
+                ),
+                400,
+            )
 
         # Get user from JWT
         username = jwt_token.get_username_from_jwt(jwt)
         user = User.query.filter_by(username=username).first()
 
         if not user:
-            return jsonify({'error': 'User not found'}), 404
+            return jsonify({"error": "User not found"}), 404
 
         # Check if entry already exists for this user and application
         existing_entry = Entry.query.filter_by(
-            user_id=user.id,
-            application=application
+            user_id=user.id, application=application
         ).first()
 
         if existing_entry:
             # Update existing entry
             existing_entry.password = password
-            message = 'Password updated successfully'
+            message = "Password updated successfully"
         else:
             # Create new entry
             entry = Entry(
                 user_id=user.id,
                 application=application,
                 application_username=application_username,
-                password=password
+                password=password,
             )
             db.session.add(entry)
-            message = 'Password stored successfully'
+            message = "Password stored successfully"
 
         db.session.commit()
-        return jsonify({'message': message}), 201
+        return jsonify({"message": message}), 201
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@pw_manager_bp.route('/password', methods=['DELETE'])
+@pw_manager_bp.route("/password", methods=["DELETE"])
 def delete_password():
     """
     Delete a password entry for a specific application.
@@ -99,44 +105,44 @@ def delete_password():
     """
     try:
         data = request.get_json()
-        jwt = data.get('jwt')
-        application = data.get('application')
+        jwt = data.get("jwt")
+        application = data.get("application")
 
         # Validate JWT token
         if not jwt or not jwt_token.validate_jwt(jwt):
-            return jsonify({'error': 'JWT token expired or invalid'}), 400
+            return jsonify({"error": "JWT token expired or invalid"}), 400
 
         # Validate required fields
         if not application:
-            return jsonify({'error': 'Application name is required'}), 400
+            return jsonify({"error": "Application name is required"}), 400
 
         # Get user from JWT
         username = jwt_token.get_username_from_jwt(jwt)
         user = User.query.filter_by(username=username).first()
 
         if not user:
-            return jsonify({'error': 'User not found'}), 404
+            return jsonify({"error": "User not found"}), 404
 
         # Find and delete the entry
-        entry = Entry.query.filter_by(
-            user_id=user.id,
-            application=application
-        ).first()
+        entry = Entry.query.filter_by(user_id=user.id, application=application).first()
 
         if not entry:
-            return jsonify({'error': 'Password entry not found for this application'}), 404
+            return (
+                jsonify({"error": "Password entry not found for this application"}),
+                404,
+            )
 
         db.session.delete(entry)
         db.session.commit()
 
-        return jsonify({'message': 'Password deleted successfully'}), 200
+        return jsonify({"message": "Password deleted successfully"}), 200
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@pw_manager_bp.route('/passwords', methods=['GET'])
+@pw_manager_bp.route("/passwords", methods=["GET"])
 def get_all_passwords():
     """
     Retrieve all application/password pairs for the authenticated user.
@@ -154,34 +160,29 @@ def get_all_passwords():
     """
     try:
         data = request.get_json()
-        jwt = data.get('jwt')
+        jwt = data.get("jwt")
 
         # Validate JWT token
         if not jwt or not jwt_token.validate_jwt(jwt):
-            return jsonify({'error': 'JWT token expired or invalid'}), 400
+            return jsonify({"error": "JWT token expired or invalid"}), 400
 
         # Get user from JWT
         username = jwt_token.get_username_from_jwt(jwt)
         user = User.query.filter_by(username=username).first()
 
         if not user:
-            return jsonify({'error': 'User not found'}), 404
+            return jsonify({"error": "User not found"}), 404
 
         # Get all entries for this user
         entries = Entry.query.filter_by(user_id=user.id).all()
 
         # Format the response
         passwords = [
-            {
-                'application': entry.application,
-                'password': entry.password
-            }
+            {"application": entry.application, "password": entry.password}
             for entry in entries
         ]
 
-        return jsonify({
-            'passwords': passwords
-        }), 200
+        return jsonify({"passwords": passwords}), 200
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500

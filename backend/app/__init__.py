@@ -44,20 +44,35 @@ def create_app():
     db.init_app(app)
 
     # Import blueprints
-    from app.routes.user_route import user_bp
-    from app.routes.totp_route import totp_bp
-    from app.routes.pw_manager_route import pw_manager_bp
+    from backend.app.routes.user_route import user_bp
+    from backend.app.routes.totp_route import totp_bp
+    from backend.app.routes.pw_manager_route import pw_manager_bp
+    from backend.app.routes.jwt_route import jwt_bp
 
-    app.register_blueprint(user_bp)
-    app.register_blueprint(totp_bp)
-    app.register_blueprint(pw_manager_bp)
+    app.register_blueprint(user_bp, url_prefix="/users")
+    app.register_blueprint(totp_bp, url_prefix="/totp")
+    app.register_blueprint(pw_manager_bp, url_prefix="/pw_manager")
+    app.register_blueprint(jwt_bp, url_prefix="/jwt")
+
+    # Add security headers to all responses
+    @app.after_request
+    def after_request(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
+
+    @app.route("/")
+    def index():
+        return "You're in the backend :)"
 
     with app.app_context():
         """
         User must be initialized before Entry
         """
-        from app.model import User
-        from app.model import Entry
+        from backend.app.model import User
+        from backend.app.model import Entry
+
         db.create_all()
 
     return app

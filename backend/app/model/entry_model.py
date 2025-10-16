@@ -10,7 +10,7 @@ Source: https://dev.to/francescoxx/python-crud-rest-api-using-flask-sqlalchemy-p
         https://blog.devgenius.io/part-1-containerized-backend-with-flask-and-postgresql-f28e48c96224
 """
 
-from app import db
+from backend.app import db
 
 
 class Entry(db.Model):
@@ -51,10 +51,12 @@ class Entry(db.Model):
         Passwords should be encrypted before storing in this table. Never store
         plain text passwords.
     """
-    __tablename__ = 'entries'
+
+    __tablename__ = "entries"
+    __table_args__ = {"extend_existing": True}
 
     entry_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
     application = db.Column(db.String(120), nullable=False)
     application_username = db.Column(db.String(255), nullable=False)
     password = db.Column(db.String(255), nullable=False)

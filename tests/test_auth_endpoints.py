@@ -12,7 +12,7 @@ import os
 from pathlib import Path
 
 # Add backend to Python path
-backend_path = Path(__file__).parent / "backend"
+backend_path = Path(__file__).parent.parent / "backend"
 sys.path.insert(0, str(backend_path))
 
 # Set environment variable for testing
@@ -28,9 +28,11 @@ class TestAuthEndpoints:
     @pytest.fixture
     def app(self):
         """Create and configure a Flask app for testing"""
+        # Set environment variable for testing
+        os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
         app = create_app()
         app.config["TESTING"] = True
-        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
 
         with app.app_context():
             db.create_all()
@@ -45,11 +47,16 @@ class TestAuthEndpoints:
     @pytest.fixture
     def test_user(self, app):
         """Create a test user in the database"""
+        from backend.app.service import Argon2Service
+
+        argon2 = Argon2Service()
+
         with app.app_context():
+            # Hash the password that will be used in tests
+            hashed_password = argon2.hash_password("testpassword")
             user = User(
                 username="testuser",
-                email="test@example.com",
-                password_hash="hashed_password_123",
+                password=hashed_password,
             )
             db.session.add(user)
             db.session.commit()
@@ -59,7 +66,6 @@ class TestAuthEndpoints:
         """Test successful user registration"""
         user_data = {
             "username": "newuser",
-            "email": "newuser@example.com",
             "password": "SecurePassword123!",
         }
 
@@ -272,6 +278,16 @@ class TestAuthEndpoints:
 
 class TestErrorHandling:
     """Test error handling for authentication endpoints"""
+
+    @pytest.fixture
+    def client(self):
+        """Create a test client for error handling tests"""
+        # Set environment variable for testing
+        os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
+        app = create_app()
+        app.config["TESTING"] = True
+        return app.test_client()
 
     def test_invalid_json_payload(self, client):
         """Test handling of invalid JSON payload"""

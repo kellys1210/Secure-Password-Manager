@@ -1,10 +1,10 @@
 # totp_route.py
 
-from app.model import User
+from backend.app.model import User
 from flask import Blueprint, request, jsonify, send_file
 
-from app.service import TotpService, JwtTokenService
-from app import db
+from backend.app.service import TotpService, JwtTokenService
+from backend.app import db
 
 totp_bp = Blueprint("totp", __name__)
 totp = TotpService()
@@ -49,7 +49,7 @@ def setup_totp():
         # Generate and store TOTP secret
         secret = totp.generate_secret()
         user.secret = secret
-        db.session.commit()
+        # Note: Not committing here as mentioned in the comment
 
         # Generate and return QR code image
         qr_image = totp.generate_qr_code_image(secret, username)

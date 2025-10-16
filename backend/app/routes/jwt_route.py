@@ -4,11 +4,11 @@ from flask import Blueprint, request, jsonify
 
 from backend.app.service import JwtTokenService
 
-jwt_bp = Blueprint('auth', __name__)
+jwt_bp = Blueprint("jwt", __name__)
 jwt_token = JwtTokenService()
 
 
-@jwt_bp.route('jwt/token', methods=['POST'])
+@jwt_bp.route("/token", methods=["POST"])
 def generate_jwt_session_token():
     """
     Generate and return a JWT session token for the specified user.
@@ -26,21 +26,21 @@ def generate_jwt_session_token():
     """
     try:
         data = request.get_json()
-        username = data.get('username')
+        username = data.get("username")
         if not username:
-            return jsonify({'error': 'Username is required'}), 400
+            return jsonify({"error": "Username is required"}), 400
 
         # Generate JWT session management token
         jwt_token_string = jwt_token.generate_jwt(username)
 
         # Send JWT token
-        return jsonify({'jwt': jwt_token_string}), 200
+        return jsonify({"jwt": jwt_token_string}), 200
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@jwt_bp.route('jwt/verify', methods=['POST'])
+@jwt_bp.route("/verify", methods=["POST"])
 def verify_jwt_token():
     """
     Verify a JWT token provided by the user.
@@ -59,14 +59,14 @@ def verify_jwt_token():
     """
     try:
         data = request.get_json()
-        jwt_token_string = data.get('jwt')
+        jwt_token_string = data.get("jwt")
         if not jwt_token_string:
-            return jsonify({'error': 'JWT Token not provided'}), 400
+            return jsonify({"error": "JWT Token not provided"}), 400
 
         if jwt_token.validate_jwt(jwt_token_string):
-            return jsonify({'message': 'JWT Token verified successfully'}), 200
+            return jsonify({"message": "JWT Token verified successfully"}), 200
         else:
-            return jsonify({'error': 'Invalid JWT Token'}), 401
+            return jsonify({"error": "Invalid JWT Token"}), 401
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
