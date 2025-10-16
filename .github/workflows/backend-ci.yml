@@ -49,5 +49,7 @@ jobs:
       - name: Run tests with pytest
         env:
           PYTHONPATH: backend
+          DATABASE_URL: "sqlite:///:memory:"
+          SQLALCHEMY_DATABASE_URI: "sqlite:///:memory:"
         run: |
           python -m pytest tests/ -v

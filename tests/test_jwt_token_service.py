@@ -31,9 +31,7 @@ class TestJwtToken:
 
         # Decode without verification to check structure
         decoded = jwt.decode(
-            token,
-            jwt_handler.SECRET_KEY,
-            algorithms=[jwt_handler.ALG]
+            token, jwt_handler.SECRET_KEY, algorithms=[jwt_handler.ALG]
         )
 
         assert decoded["sub"] == user_id
@@ -46,14 +44,12 @@ class TestJwtToken:
         token = jwt_handler.generate_jwt(user_id)
 
         decoded = jwt.decode(
-            token,
-            jwt_handler.SECRET_KEY,
-            algorithms=[jwt_handler.ALG]
+            token, jwt_handler.SECRET_KEY, algorithms=[jwt_handler.ALG]
         )
 
         assert decoded["sub"] == user_id
 
-    @patch("backend.app.service.jwt_token.datetime")
+    @patch("backend.app.service.jwt_token_service.datetime")
     def test_generate_jwt_expiration_time(self, mock_datetime, jwt_handler):
         """Test that token expiration is set correctly (30 minutes from issued time)."""
         fixed_time = datetime(2024, 1, 1, 12, 0, 0)
@@ -66,7 +62,7 @@ class TestJwtToken:
             token,
             jwt_handler.SECRET_KEY,
             algorithms=[jwt_handler.ALG],
-            options={"verify_exp": False}
+            options={"verify_exp": False},
         )
 
         # Verify that exp is 30 minutes (1800 seconds) after iat
@@ -89,7 +85,7 @@ class TestJwtToken:
     def test_validate_jwt_rejects_expired_token(self, jwt_handler):
         """Test that _validate_jwt returns False for an expired token."""
         # Create a token that's already expired
-        with patch("backend.app.service.jwt_token.datetime") as mock_datetime:
+        with patch("backend.app.service.jwt_token_service.datetime") as mock_datetime:
             past_time = datetime.utcnow() - timedelta(hours=1)
             mock_datetime.utcnow.return_value = past_time
             token = jwt_handler.generate_jwt("user123")
@@ -123,7 +119,7 @@ class TestJwtToken:
         payload = {
             "sub": "user123",
             "iat": datetime.utcnow(),
-            "exp": datetime.utcnow() + timedelta(minutes=30)
+            "exp": datetime.utcnow() + timedelta(minutes=30),
         }
 
         token = jwt_handler._encode_jwt(header, payload)
@@ -139,7 +135,7 @@ class TestJwtToken:
             "sub": "custom_user",
             "role": "admin",
             "iat": datetime.utcnow(),
-            "exp": datetime.utcnow() + timedelta(minutes=30)
+            "exp": datetime.utcnow() + timedelta(minutes=30),
         }
 
         token = jwt_handler._encode_jwt(header, custom_payload)
@@ -180,13 +176,16 @@ class TestJwtToken:
         """Test that _validate_jwt handles None input gracefully."""
         assert jwt_handler.validate_jwt(None) is False
 
-    @pytest.mark.parametrize("user_id", [
-        "user123",
-        "admin@example.com",
-        "12345",
-        "user-with-dashes",
-        "user_with_underscores",
-    ])
+    @pytest.mark.parametrize(
+        "user_id",
+        [
+            "user123",
+            "admin@example.com",
+            "12345",
+            "user-with-dashes",
+            "user_with_underscores",
+        ],
+    )
     def test_generate_jwt_with_various_user_ids(self, jwt_handler, user_id):
         """Test that generate_jwt works with various user ID formats."""
         token = jwt_handler.generate_jwt(user_id)
@@ -210,7 +209,7 @@ class TestJwtToken:
         payload = {
             "sub": username,
             "iat": datetime.utcnow() - timedelta(minutes=60),
-            "exp": datetime.utcnow() - timedelta(minutes=30)
+            "exp": datetime.utcnow() - timedelta(minutes=30),
         }
         expired_token = jwt_handler._encode_jwt(header, payload)
 
@@ -241,7 +240,7 @@ class TestJwtToken:
         wrong_token = jwt.encode(
             {"sub": username, "exp": datetime.utcnow() + timedelta(minutes=30)},
             "wrong_secret_key",
-            algorithm="HS256"
+            algorithm="HS256",
         )
 
         extracted_username = jwt_handler.get_username_from_jwt(wrong_token)
