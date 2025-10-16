@@ -48,8 +48,7 @@ class TestAuthEndpoints:
         with app.app_context():
             user = User(
                 username="testuser",
-                email="test@example.com",
-                password_hash="hashed_password_123",
+                password="hashed_password_123",
             )
             db.session.add(user)
             db.session.commit()
@@ -59,7 +58,6 @@ class TestAuthEndpoints:
         """Test successful user registration"""
         user_data = {
             "username": "newuser",
-            "email": "newuser@example.com",
             "password": "SecurePassword123!",
         }
 
@@ -272,6 +270,14 @@ class TestAuthEndpoints:
 
 class TestErrorHandling:
     """Test error handling for authentication endpoints"""
+
+    @pytest.fixture
+    def client(self):
+        """Create a test client for error handling tests"""
+        app = create_app()
+        app.config["TESTING"] = True
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+        return app.test_client()
 
     def test_invalid_json_payload(self, client):
         """Test handling of invalid JSON payload"""

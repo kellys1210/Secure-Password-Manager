@@ -47,10 +47,12 @@ def create_app():
     from app.routes.user_route import user_bp
     from app.routes.totp_route import totp_bp
     from app.routes.pw_manager_route import pw_manager_bp
+    from app.routes.jwt_route import jwt_bp
 
     app.register_blueprint(user_bp)
     app.register_blueprint(totp_bp)
     app.register_blueprint(pw_manager_bp)
+    app.register_blueprint(jwt_bp)
 
     with app.app_context():
         """
@@ -58,6 +60,7 @@ def create_app():
         """
         from app.model import User
         from app.model import Entry
+
         db.create_all()
 
     return app
