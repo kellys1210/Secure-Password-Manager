@@ -59,7 +59,12 @@ def register_user():
         db.session.add(new_user)
         db.session.commit()
 
-        return jsonify({"message": "Registration Successful"}), 201
+        return (
+            jsonify(
+                {"message": "Registration Successful", "user_id": new_user.user_id}
+            ),
+            201,
+        )
 
     except Exception as e:
         db.session.rollback()
@@ -80,32 +85,38 @@ def login():
     Returns:
         JSON response with authentication result and appropriate HTTP status code.
         - 200: Login successful
-        - 400: Missing username or password
+        - 400: Missing username or password, or invalid JSON
         - 401: Invalid credentials (username not found or password incorrect)
     """
-    data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({"error": "Invalid JSON payload"}), 400
 
-    # Validate required fields
-    if not username or not password:
-        return jsonify({"error": "Username and password are required"}), 400
+        username = data.get("username")
+        password = data.get("password")
 
-    # Check if user exists
-    user = User.query.filter_by(username=username).first()
-    if not user:
-        return jsonify({"error": "Invalid credentials"}), 401
+        # Validate required fields
+        if not username or not password:
+            return jsonify({"error": "Username and password are required"}), 400
 
-    # Verify password (plain password against stored hash)
-    if not argon2.verify_hash(user.password, password):
-        return jsonify({"error": "Invalid credentials"}), 401
+        # Check if user exists
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return jsonify({"error": "Invalid credentials"}), 401
 
-    # Check if stored hash needs to be rehashed with new parameters
-    if argon2.check_needs_rehash(user.password):
-        user.password = argon2.hash_password(password)
-        db.session.commit()
+        # Verify password (plain password against stored hash)
+        if not argon2.verify_hash(user.password, password):
+            return jsonify({"error": "Invalid credentials"}), 401
 
-    return jsonify({"message": "Login successful", "user_id": user.user_id}), 200
+        # Check if stored hash needs to be rehashed with new parameters
+        if argon2.check_needs_rehash(user.password):
+            user.password = argon2.hash_password(password)
+            db.session.commit()
+
+        return jsonify({"message": "Login successful", "user_id": user.user_id}), 200
+    except Exception as e:
+        return jsonify({"error": "Invalid request format"}), 400
 
 
 @user_bp.route("/register", methods=["GET"])

@@ -8,7 +8,7 @@ jwt_bp = Blueprint("jwt", __name__)
 jwt_token = JwtTokenService()
 
 
-@jwt_bp.route("/jwt/token", methods=["POST"])
+@jwt_bp.route("/token", methods=["POST"])
 def generate_jwt_session_token():
     """
     Generate and return a JWT session token for the specified user.
@@ -40,7 +40,7 @@ def generate_jwt_session_token():
         return jsonify({"error": str(e)}), 500
 
 
-@jwt_bp.route("/jwt/verify", methods=["POST"])
+@jwt_bp.route("/verify", methods=["POST"])
 def verify_jwt_token():
     """
     Verify a JWT token provided by the user.

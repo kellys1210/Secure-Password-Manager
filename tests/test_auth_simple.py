@@ -14,8 +14,8 @@ import os
 sys.path.insert(0, "backend")
 
 # Import with type ignore to suppress Pylance warnings
-from app import create_app, db  # type: ignore
-from app.model import User  # type: ignore
+from backend.app import create_app, db  # type: ignore
+from backend.app.model import User  # type: ignore
 
 
 class TestAuthSimple:

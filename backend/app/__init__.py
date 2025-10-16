@@ -54,6 +54,18 @@ def create_app():
     app.register_blueprint(pw_manager_bp, url_prefix="/pw_manager")
     app.register_blueprint(jwt_bp, url_prefix="/jwt")
 
+    # Add security headers to all responses
+    @app.after_request
+    def after_request(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
+
+    @app.route("/")
+    def index():
+        return "You're in the backend :)"
+
     with app.app_context():
         """
         User must be initialized before Entry
