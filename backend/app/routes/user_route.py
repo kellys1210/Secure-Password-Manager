@@ -1,13 +1,13 @@
 # user_route.py
 # Source: https://flask-sqlalchemy.readthedocs.io/en/stable/quickstart/#define-models
 
-from app import db
-from app.model import User
+from backend.app import db
+from backend.app.model import User
 from flask import Blueprint, request, jsonify
 
-from app.service import Argon2Service
+from backend.app.service import Argon2Service
 
-user_bp = Blueprint('user', __name__)
+user_bp = Blueprint("user", __name__)
 argon2 = Argon2Service()
 
 """
@@ -19,7 +19,7 @@ Add, Update User:
 """
 
 
-@user_bp.route('/register', methods=['POST'])
+@user_bp.route("/register", methods=["POST"])
 def register_user():
     """
     Register a new user with username and password.
@@ -39,37 +39,34 @@ def register_user():
     """
     try:
         data = request.get_json()
-        new_username = data.get('username')
-        new_password = data.get('password')
+        new_username = data.get("username")
+        new_password = data.get("password")
 
         if not new_username or not new_password:
-            return jsonify({'error': 'Username and password are required'}), 400
+            return jsonify({"error": "Username and password are required"}), 400
 
         # Check if user already exists
         if User.query.filter_by(username=new_username).first():
-            return jsonify({'error': 'Username already exists'}), 409
+            return jsonify({"error": "Username already exists"}), 409
 
         # Create master password hash
         new_password_hash = argon2.hash_password(new_password)
 
         # Create new User object
-        new_user = User(
-            username=new_username,
-            password=new_password_hash
-        )
+        new_user = User(username=new_username, password=new_password_hash)
 
         # Add and save user to PostgreSQL
         db.session.add(new_user)
         db.session.commit()
 
-        return jsonify({'message': "Registration Successful"}), 201
+        return jsonify({"message": "Registration Successful"}), 201
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@user_bp.route('/login', methods=['POST'])
+@user_bp.route("/login", methods=["POST"])
 def login():
     """
     Authenticate a user with username and password.
@@ -87,34 +84,31 @@ def login():
         - 401: Invalid credentials (username not found or password incorrect)
     """
     data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
+    username = data.get("username")
+    password = data.get("password")
 
     # Validate required fields
     if not username or not password:
-        return jsonify({'error': 'Username and password are required'}), 400
+        return jsonify({"error": "Username and password are required"}), 400
 
     # Check if user exists
     user = User.query.filter_by(username=username).first()
     if not user:
-        return jsonify({'error': 'Invalid credentials'}), 401
+        return jsonify({"error": "Invalid credentials"}), 401
 
     # Verify password (plain password against stored hash)
     if not argon2.verify_hash(user.password, password):
-        return jsonify({'error': 'Invalid credentials'}), 401
+        return jsonify({"error": "Invalid credentials"}), 401
 
     # Check if stored hash needs to be rehashed with new parameters
     if argon2.check_needs_rehash(user.password):
         user.password = argon2.hash_password(password)
         db.session.commit()
 
-    return jsonify({
-        'message': 'Login successful',
-        'user_id': user.user_id
-    }), 200
+    return jsonify({"message": "Login successful", "user_id": user.user_id}), 200
 
 
-@user_bp.route('/register', methods=['GET'])
+@user_bp.route("/register", methods=["GET"])
 def get_all_registered_users():
     """
     Get a list of all registered users.
@@ -133,13 +127,10 @@ def get_all_registered_users():
     try:
         users = User.query.all()
 
-        return jsonify(
-            {
-                "id": user.user_id,
-                "username": user.username
-            }
-            for user in users
-        ), 200
+        return (
+            jsonify({"id": user.user_id, "username": user.username} for user in users),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
