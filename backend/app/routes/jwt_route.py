@@ -4,7 +4,7 @@ from flask import Blueprint, request, jsonify
 
 from backend.app.service import JwtTokenService
 
-jwt_bp = Blueprint("auth", __name__)
+jwt_bp = Blueprint("jwt", __name__)
 jwt_token = JwtTokenService()
 
 

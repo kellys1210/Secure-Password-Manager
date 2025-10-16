@@ -49,10 +49,10 @@ def create_app():
     from backend.app.routes.pw_manager_route import pw_manager_bp
     from backend.app.routes.jwt_route import jwt_bp
 
-    app.register_blueprint(user_bp)
-    app.register_blueprint(totp_bp)
-    app.register_blueprint(pw_manager_bp)
-    app.register_blueprint(jwt_bp)
+    app.register_blueprint(user_bp, url_prefix="/users")
+    app.register_blueprint(totp_bp, url_prefix="/totp")
+    app.register_blueprint(pw_manager_bp, url_prefix="/pw_manager")
+    app.register_blueprint(jwt_bp, url_prefix="/jwt")
 
     with app.app_context():
         """
