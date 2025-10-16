@@ -19,6 +19,7 @@ def add_update_password():
         {
             "jwt": "valid_jwt_token",
             "application": "application_name",
+            "application_username": "application_username"
             "password": "hashed_password"
         }
 
@@ -32,6 +33,7 @@ def add_update_password():
         data = request.get_json()
         jwt = data.get('jwt')
         application = data.get('application')
+        application_username = data.get('application_username')
         password = data.get('password')
 
         # Validate JWT token
@@ -39,8 +41,8 @@ def add_update_password():
             return jsonify({'error': 'JWT token expired or invalid'}), 400
 
         # Validate required fields
-        if not application or not password:
-            return jsonify({'error': 'Application name and password are required'}), 400
+        if not application or not application_username or not password:
+            return jsonify({'error': 'Application name, application username, and password are required'}), 400
 
         # Get user from JWT
         username = jwt_token.get_username_from_jwt(jwt)
@@ -64,6 +66,7 @@ def add_update_password():
             entry = Entry(
                 user_id=user.id,
                 application=application,
+                application_username=application_username,
                 password=password
             )
             db.session.add(entry)

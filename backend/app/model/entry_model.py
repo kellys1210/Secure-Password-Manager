@@ -27,6 +27,7 @@ class Entry(db.Model):
                       Links to users.id table. Required field.
         application (str): Name of the application or service (e.g., "Gmail", "GitHub").
                           Maximum 120 characters. Required field.
+        application (str): Username for the application and service login. Maximum 255 characters.
         password (str): Encrypted password for the application. Maximum 255 characters.
                        Should be encrypted before storage. Required field.
 
@@ -54,6 +55,7 @@ class Entry(db.Model):
     entry_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     application = db.Column(db.String(120), nullable=False)
+    application_username = db.Column(db.string(255), nullable=False)
     password = db.Column(db.String(255), nullable=False)
 
     def __str__(self):

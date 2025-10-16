@@ -1,7 +1,7 @@
 # test_jwt_token.py
 
-from datetime import datetime, timedelta
 import time
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import jwt
@@ -72,6 +72,7 @@ class TestJwtToken:
         # Verify that exp is 30 minutes (1800 seconds) after iat
         assert decoded["exp"] - decoded["iat"] == 30 * 60
         assert decoded["sub"] == "user123"
+
     def test_validate_jwt_accepts_valid_token(self, jwt_handler):
         """Test that _validate_jwt returns True for a valid token."""
         token = jwt_handler.generate_jwt("user123")
