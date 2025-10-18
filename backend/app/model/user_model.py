@@ -10,7 +10,7 @@ Source: https://dev.to/francescoxx/python-crud-rest-api-using-flask-sqlalchemy-p
         https://blog.devgenius.io/part-1-containerized-backend-with-flask-and-postgresql-f28e48c96224
 """
 
-from backend.app import db
+from app import db
 
 
 class User(db.Model):
@@ -41,7 +41,7 @@ class User(db.Model):
     __tablename__ = "users"
     __table_args__ = {"extend_existing": True}
 
-    user_id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     secret = db.Column(db.String(255), nullable=True)
@@ -62,4 +62,4 @@ class User(db.Model):
         Returns:
             str: Representation showing user ID and username.
         """
-        return f"<User(id={self.user_id}, username='{self.username}')>"
+        return f"<User(id={self.id}, username='{self.username}')>"

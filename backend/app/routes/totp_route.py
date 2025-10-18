@@ -1,10 +1,10 @@
 # totp_route.py
 
-from backend.app.model import User
+from app.model import User
 from flask import Blueprint, request, jsonify, send_file
 
-from backend.app.service import TotpService, JwtTokenService
-from backend.app import db
+from app.service import TotpService, JwtTokenService
+from app import db
 
 totp_bp = Blueprint("totp", __name__)
 totp = TotpService()

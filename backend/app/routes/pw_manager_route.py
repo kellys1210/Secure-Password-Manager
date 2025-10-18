@@ -1,10 +1,10 @@
 # pw_manager_route.py
 
-from backend.app import db
-from backend.app.model import Entry, User
+from app import db
+from app.model import Entry, User
 from flask import Blueprint, request, jsonify
 
-from backend.app.service import JwtTokenService
+from app.service import JwtTokenService
 
 pw_manager_bp = Blueprint("pw_manager", __name__)
 jwt_token = JwtTokenService()
