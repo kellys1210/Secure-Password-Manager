@@ -1,7 +1,7 @@
 # pw_manager_route.py
 
-from app import db
-from app.model import Entry, User
+from backend.app import db
+from backend.app.model import Entry, User
 from flask import Blueprint, request, jsonify
 
 from app.service import JwtTokenService

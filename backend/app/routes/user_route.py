@@ -1,8 +1,8 @@
 # user_route.py
 # Source: https://flask-sqlalchemy.readthedocs.io/en/stable/quickstart/#define-models
 
-from app import db
-from app.model import User
+from backend.app import db
+from backend.app.model import User
 from flask import Blueprint, request, jsonify
 
 from app.service import Argon2Service

@@ -15,7 +15,7 @@ sys.path.insert(0, "backend")
 
 # Import with type ignore to suppress Pylance warnings
 from backend.app import create_app, db  # type: ignore
-from backend.app.model import User  # type: ignore
+from app.model import User, Entry  # type: ignore
 
 
 class TestAuthSimple:
@@ -32,8 +32,20 @@ class TestAuthSimple:
         app = create_app()
         app.config["TESTING"] = True
 
+        # Import models to ensure they are registered with the db
+        from app.model import User, Entry
+
         with app.app_context():
+            # Print debug information
+            print("Creating tables...")
             db.create_all()
+            # Check if tables were created
+            from sqlalchemy import text
+
+            result = db.session.execute(
+                text("SELECT name FROM sqlite_master WHERE type='table'")
+            ).fetchall()
+            print(f"Tables in database: {result}")
             yield app
             db.drop_all()
 

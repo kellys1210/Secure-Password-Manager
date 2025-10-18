@@ -10,7 +10,7 @@ Source: https://dev.to/francescoxx/python-crud-rest-api-using-flask-sqlalchemy-p
         https://blog.devgenius.io/part-1-containerized-backend-with-flask-and-postgresql-f28e48c96224
 """
 
-from app import db
+from backend.app import db
 
 
 class Entry(db.Model):
