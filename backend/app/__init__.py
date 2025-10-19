@@ -44,10 +44,10 @@ def create_app():
     db.init_app(app)
 
     # Import blueprints
-    from app.routes.user_route import user_bp
-    from app.routes.totp_route import totp_bp
-    from app.routes.pw_manager_route import pw_manager_bp
-    from app.routes.jwt_route import jwt_bp
+    from backend.app.routes.user_route import user_bp
+    from backend.app.routes.totp_route import totp_bp
+    from backend.app.routes.pw_manager_route import pw_manager_bp
+    from backend.app.routes.jwt_route import jwt_bp
 
     app.register_blueprint(user_bp, url_prefix="/users")
     app.register_blueprint(totp_bp, url_prefix="/totp")
@@ -70,8 +70,8 @@ def create_app():
         """
         User must be initialized before Entry
         """
-        from app.model import User
-        from app.model import Entry
+        from backend.app.model import User
+        from backend.app.model import Entry
 
         db.create_all()
 

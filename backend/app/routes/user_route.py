@@ -5,7 +5,7 @@ from backend.app import db
 from backend.app.model import User
 from flask import Blueprint, request, jsonify
 
-from app.service import Argon2Service
+from backend.app.service import Argon2Service
 
 user_bp = Blueprint("user", __name__)
 argon2 = Argon2Service()

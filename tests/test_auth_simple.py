@@ -10,12 +10,9 @@ import json
 import sys
 import os
 
-# Add backend to Python path for runtime
-sys.path.insert(0, "backend")
-
 # Import with type ignore to suppress Pylance warnings
 from backend.app import create_app, db  # type: ignore
-from app.model import User, Entry  # type: ignore
+from backend.app.model import User, Entry  # type: ignore
 
 
 class TestAuthSimple:
@@ -33,7 +30,7 @@ class TestAuthSimple:
         app.config["TESTING"] = True
 
         # Import models to ensure they are registered with the db
-        from app.model import User, Entry
+        from backend.app.model import User, Entry
 
         with app.app_context():
             # Print debug information

@@ -3,7 +3,7 @@
 from backend.app.model import User
 from flask import Blueprint, request, jsonify, send_file
 
-from app.service import TotpService, JwtTokenService
+from backend.app.service import TotpService, JwtTokenService
 from backend.app import db
 
 totp_bp = Blueprint("totp", __name__)

@@ -15,7 +15,7 @@ the 'application' object.
 source: https://blog.devgenius.io/part-1-containerized-backend-with-flask-and-postgresql-f28e48c96224
 """
 
-from app import create_app
+from backend.app import create_app
 
 application = create_app()
 

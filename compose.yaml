@@ -1,6 +1,6 @@
 services:
   backend:
-    build: ./backend
+    build: .
     container_name: backend-services
     ports:
       - "8080:8080"
@@ -8,7 +8,8 @@ services:
       - FLASK_ENV=development
       - DATABASE_URL=${DATABASE_URL}
     volumes:
-      - ./backend:/app
+      - .:/app
+      - ./backend:/app/backend
     depends_on:
       flask_db:
         condition: service_healthy
