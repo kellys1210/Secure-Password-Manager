@@ -9,17 +9,12 @@ import pytest
 import json
 import sys
 import os
-from pathlib import Path
-
-# Add backend to Python path
-backend_path = Path(__file__).parent.parent / "backend"
-sys.path.insert(0, str(backend_path))
 
 # Set environment variable for testing
 os.environ["FLASK_ENV"] = "testing"
 
 from backend.app import create_app, db
-from backend.app.model import User
+from backend.app.model import User, Entry
 
 
 class TestAuthEndpoints:
@@ -33,6 +28,9 @@ class TestAuthEndpoints:
 
         app = create_app()
         app.config["TESTING"] = True
+
+        # Import models to ensure they are registered with the db
+        from backend.app.model import User, Entry
 
         with app.app_context():
             db.create_all()

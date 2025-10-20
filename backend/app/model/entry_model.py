@@ -55,10 +55,10 @@ class Entry(db.Model):
     __tablename__ = "entries"
     __table_args__ = {"extend_existing": True}
 
-    entry_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     application = db.Column(db.String(120), nullable=False)
-    application_username = db.Column(db.String(255), nullable=False)
+    username = db.Column(db.String(80), nullable=False)
     password = db.Column(db.String(255), nullable=False)
 
     def __str__(self):
@@ -78,4 +78,4 @@ class Entry(db.Model):
         Returns:
             str: Representation showing entry ID, user ID, and application.
         """
-        return f"<Entry(id={self.entry_id}, user_id={self.user_id}, application='{self.application}')>"
+        return f"<Entry(id={self.id}, user_id={self.user_id}, application='{self.application}')>"

@@ -60,9 +60,7 @@ def register_user():
         db.session.commit()
 
         return (
-            jsonify(
-                {"message": "Registration Successful", "user_id": new_user.user_id}
-            ),
+            jsonify({"message": "Registration Successful", "user_id": new_user.id}),
             201,
         )
 
@@ -114,7 +112,7 @@ def login():
             user.password = argon2.hash_password(password)
             db.session.commit()
 
-        return jsonify({"message": "Login successful", "user_id": user.user_id}), 200
+        return jsonify({"message": "Login successful", "user_id": user.id}), 200
     except Exception as e:
         return jsonify({"error": "Invalid request format"}), 400
 
@@ -139,7 +137,7 @@ def get_all_registered_users():
         users = User.query.all()
 
         return (
-            jsonify({"id": user.user_id, "username": user.username} for user in users),
+            jsonify({"id": user.id, "username": user.username} for user in users),
             200,
         )
 
