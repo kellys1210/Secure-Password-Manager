@@ -90,7 +90,7 @@ export default function RegisterForm() {
     <form onSubmit={handleSubmit}>
       {message && <p>{message}</p>}
 
-      <label for="email">Email:</label>
+      <label htmlFor="email">Email:</label>
       <br />
       <input
         id="email"
@@ -102,7 +102,7 @@ export default function RegisterForm() {
       <br />
       <br />
 
-      <label for="password">Password:</label>
+      <label htmlFor="password">Password:</label>
       <br />
       <input
         id="password"
@@ -115,7 +115,7 @@ export default function RegisterForm() {
       <br />
       <br />
 
-      <label for="confirm">Confirm Password:</label>
+      <label htmlFor="confirm">Confirm Password:</label>
       <br />
       <input
         id="confirm"

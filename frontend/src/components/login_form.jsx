@@ -3,7 +3,7 @@
 import React from "react";
 import { useState } from "react";
 import { validate as validateEmail } from "email-validator";
-import { storeToken, removeToken, authenticatedFetch } from "../utils/auth.js";
+import { storeToken, removeToken } from "../utils/auth.js";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
