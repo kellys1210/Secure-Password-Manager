@@ -53,3 +53,11 @@ jobs:
           SQLALCHEMY_DATABASE_URI: "sqlite:///:memory:"
         run: |
           python -m pytest tests/ -v
+
+      - name: Run cross-environment compatibility tests
+        env:
+          PYTHONPATH: backend
+          DATABASE_URL: "sqlite:///:memory:"
+          SQLALCHEMY_DATABASE_URI: "sqlite:///:memory:"
+        run: |
+          python -m pytest tests/test_auth_cross_env.py -v

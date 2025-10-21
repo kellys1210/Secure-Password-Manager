@@ -15,6 +15,7 @@ from os import environ
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 
 db = SQLAlchemy()
 
@@ -42,6 +43,14 @@ def create_app():
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = environ.get("DATABASE_URL")
     db.init_app(app)
+
+    # Configure CORS to allow requests from the React frontend
+    CORS(
+        app,
+        origins=["http://localhost:3000", "http://localhost:5173"],
+        methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Content-Type", "Authorization"],
+    )
 
     # Import blueprints
     from backend.app.routes.user_route import user_bp
