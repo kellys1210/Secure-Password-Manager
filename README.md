@@ -6,7 +6,21 @@
 
 https://www.docker.com/products/docker-desktop/
 
-#### 2. Make sure to add the credentials to a .env in the project root that I will share in the backend-dev channel
+#### 2. Set up environment variables
+
+Copy the `.env.example` file to `.env` and configure your environment variables:
+
+```bash
+cp .env.example .env
+```
+
+Edit the `.env` file and set your actual values:
+
+- **JWT_SECRET**: A strong, random string for JWT token signing
+- **DATABASE_URL**: Database connection string
+- **SQLALCHEMY_DATABASE_URI**: SQLAlchemy database URI
+
+**Important**: Never commit the `.env` file to version control. It contains sensitive information.
 
 #### 3. Run the following command from the root dir (where compose.yaml lives):
 

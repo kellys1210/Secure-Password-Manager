@@ -51,6 +51,7 @@ jobs:
           PYTHONPATH: backend
           DATABASE_URL: "sqlite:///:memory:"
           SQLALCHEMY_DATABASE_URI: "sqlite:///:memory:"
+          JWT_SECRET: "ci-test-jwt-secret-key-for-testing-only"
         run: |
           python -m pytest tests/ -v
 
@@ -59,5 +60,6 @@ jobs:
           PYTHONPATH: backend
           DATABASE_URL: "sqlite:///:memory:"
           SQLALCHEMY_DATABASE_URI: "sqlite:///:memory:"
+          JWT_SECRET: "ci-test-jwt-secret-key-for-testing-only"
         run: |
           python -m pytest tests/test_auth_cross_env.py -v
