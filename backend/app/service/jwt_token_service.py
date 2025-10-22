@@ -3,7 +3,7 @@
 
 
 from datetime import datetime, timedelta
-
+import os
 import jwt
 
 
@@ -13,7 +13,7 @@ class JwtTokenService:
 
     Uses HS256 algorithm with a 30-minute token expiration period.
     """
-    SECRET_KEY = "I'm super secret and never change"
+    JWT_SECRET = os.getenv('JWT_SECRET')
     ALG = "HS256"
     TOKEN_EXPIRATION_MINUTES = 30
 
@@ -44,7 +44,7 @@ class JwtTokenService:
         """
         try:
             return bool(
-                jwt.decode(encoded_jwt, self.SECRET_KEY, algorithms=["HS256"])
+                jwt.decode(encoded_jwt, self.JWT_SECRET, algorithms=["HS256"])
             )
         except:
             return False
@@ -59,7 +59,7 @@ class JwtTokenService:
         try:
             decoded = jwt.decode(
                 encoded_jwt,
-                self.SECRET_KEY,
+                self.JWT_SECRET,
                 algorithms=[self.ALG]
             )
             return decoded.get("sub")
@@ -76,7 +76,7 @@ class JwtTokenService:
         """
         return jwt.encode(
             payload,
-            self.SECRET_KEY,
+            self.JWT_SECRET,
             algorithm="HS256",
             headers=header
         )
