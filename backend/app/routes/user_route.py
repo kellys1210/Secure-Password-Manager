@@ -136,10 +136,8 @@ def get_all_registered_users():
     try:
         users = User.query.all()
 
-        return (
-            jsonify({"id": user.id, "username": user.username} for user in users),
-            200,
-        )
-
+        user_list = [{"id": user.id, "username": user.username} for user in users]
+        return jsonify(user_list), 200
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
