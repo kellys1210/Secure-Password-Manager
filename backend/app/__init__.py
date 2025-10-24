@@ -11,14 +11,16 @@ multiple application instances with different configurations.
 source: https://blog.devgenius.io/part-1-containerized-backend-with-flask-and-postgresql-f28e48c96224
 """
 
-from os import environ
+import os
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+import sqlalchemy
 from flask_cors import CORS
+from google.cloud.sql.connector import Connector, IPTypes
+import pg8000
 
 db = SQLAlchemy()
-
 
 def create_app():
     """
@@ -41,7 +43,39 @@ def create_app():
         production environments.
     """
     app = Flask(__name__)
-    app.config["SQLALCHEMY_DATABASE_URI"] = environ.get("DATABASE_URL")
+    # app.config["SQLALCHEMY_DATABASE_URI"] = environ.get("DATABASE_URL")
+
+    instance_connection_name = os.environ["INSTANCE_CONNECTION_NAME"]
+    db_user = os.environ["DB_USER"]
+    db_pass = os.environ["DB_PASS"]
+    db_name = os.environ["DB_NAME"]
+
+    ip_type = IPTypes.PRIVATE if os.environ.get("PRIVATE_IP") else IPTypes.PUBLIC
+
+    connector = Connector(ip_type=ip_type)
+
+    def getconn() -> pg8000.dbapi.Connection:
+        conn = connector.connect(
+            instance_connection_name,
+            "pg8000",
+            user=db_user,
+            password=db_pass,
+            db=db_name,
+    )
+        return conn
+
+    engine = sqlalchemy.create_engine(
+        "postgresql+pg8000://",
+        creator=getconn,
+        pool_size=5,
+        max_overflow=2,
+        pool_timeout=30,
+        pool_recycle=1800,
+        )
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = str(engine.url)
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"creator": getconn}
+
     db.init_app(app)
 
     # Configure CORS to allow requests from the React frontend
