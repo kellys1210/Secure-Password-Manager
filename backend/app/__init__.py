@@ -45,6 +45,8 @@ def create_app():
     app = Flask(__name__)
     use_cloud_sql = os.getenv("USE_CLOUD_SQL", "false").lower() == "true"
 
+    print(f"--- DB_SWITCH: USE_CLOUD_SQL is set to {use_cloud_sql} ---")
+
     if use_cloud_sql:
 
         instance_connection_name = os.environ["INSTANCE_CONNECTION_NAME"]
@@ -116,13 +118,13 @@ def create_app():
 
     @app.route("/db_check")
     def db_check():
+        db_type = "Cloud SQL" if use_cloud_sql else "Local DB (flask_db)"
         try:
             with db.engine.connect() as connection:
                 result = connection.execute(sqlalchemy.text("SELECT NOW()")).scalar()
-            return {"status": " Connected to Cloud SQL", "timestamp": str(result)}, 200
+            return {"status": f"Connected to {db_type}", "timestamp": str(result)}, 200
         except Exception as e:
-            return {"status": " Connection failed", "error": str(e)}, 500
-
+            return {"status": f"Connection to {db_type} failed", "error": str(e)}, 500
 
     with app.app_context():
         """

@@ -12,43 +12,44 @@ services:
       - .:/app
       - ./backend:/app/backend
       - ~/.config/gcloud/application_default_credentials.json:/root/.config/gcloud/application_default_credentials.json
-    # depends_on:
-    #   - flask_db  #
+    depends_on:
+      flask_db:
+        condition: service_healthy
 
-#   flask_db:
-#     image: postgres:15
-#     container_name: postgres-db
-#     restart: always
+  flask_db:
+    image: postgres:15
+    container_name: postgres-db
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+#   pgadmin:
+#     image: dpage/pgadmin4
+#     container_name: pgadmin
 #     environment:
-#       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-#       - POSTGRES_USER=${POSTGRES_USER}
-#       - POSTGRES_DB=${POSTGRES_DB}
-#     volumes:
-#       - db-data:/var/lib/postgresql/data
-#     healthcheck:
-#       test: ["CMD-SHELL", "pg_isready -U postgres"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
+#       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+#       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+#     ports:
+#       - "5050:80"
+#     depends_on:
+#       - flask_db
 
-# #   pgadmin:
-# #     image: dpage/pgadmin4
-# #     container_name: pgadmin
-# #     environment:
-# #       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
-# #       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
-# #     ports:
-# #       - "5050:80"
-# #     depends_on:
-# #       - flask_db
+#   # frontend:
+#   #   build: ./frontend
+#   #   container_name: frontend-app
+#   #   ports:
+#   #     - "3000:3000"
+#   #   depends_on:
+#   #     - backend
 
-# #   # frontend:
-# #   #   build: ./frontend
-# #   #   container_name: frontend-app
-# #   #   ports:
-# #   #     - "3000:3000"
-# #   #   depends_on:
-# #   #     - backend
-
-# volumes:
-#   db-data:
+volumes:
+  db-data:
