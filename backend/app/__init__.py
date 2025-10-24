@@ -43,38 +43,43 @@ def create_app():
         production environments.
     """
     app = Flask(__name__)
-    # app.config["SQLALCHEMY_DATABASE_URI"] = environ.get("DATABASE_URL")
+    use_cloud_sql = os.getenv("USE_CLOUD_SQL", "false").lower() == "true"
 
-    instance_connection_name = os.environ["INSTANCE_CONNECTION_NAME"]
-    db_user = os.environ["DB_USER"]
-    db_pass = os.environ["DB_PASS"]
-    db_name = os.environ["DB_NAME"]
+    if use_cloud_sql:
 
-    ip_type = IPTypes.PRIVATE if os.environ.get("PRIVATE_IP") else IPTypes.PUBLIC
+        instance_connection_name = os.environ["INSTANCE_CONNECTION_NAME"]
+        db_user = os.environ["DB_USER"]
+        db_pass = os.environ["DB_PASS"]
+        db_name = os.environ["DB_NAME"]
 
-    connector = Connector(ip_type=ip_type)
+        ip_type = IPTypes.PRIVATE if os.environ.get("PRIVATE_IP") else IPTypes.PUBLIC
 
-    def getconn() -> pg8000.dbapi.Connection:
-        conn = connector.connect(
-            instance_connection_name,
-            "pg8000",
-            user=db_user,
-            password=db_pass,
-            db=db_name,
-    )
-        return conn
+        connector = Connector(ip_type=ip_type)
 
-    engine = sqlalchemy.create_engine(
-        "postgresql+pg8000://",
-        creator=getconn,
-        pool_size=5,
-        max_overflow=2,
-        pool_timeout=30,
-        pool_recycle=1800,
+        def getconn() -> pg8000.dbapi.Connection:
+            conn = connector.connect(
+                instance_connection_name,
+                "pg8000",
+                user=db_user,
+                password=db_pass,
+                db=db_name,
         )
+            return conn
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = str(engine.url)
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"creator": getconn}
+        engine = sqlalchemy.create_engine(
+            "postgresql+pg8000://",
+            creator=getconn,
+            pool_size=5,
+            max_overflow=2,
+            pool_timeout=30,
+            pool_recycle=1800,
+            )
+
+        app.config["SQLALCHEMY_DATABASE_URI"] = str(engine.url)
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"creator": getconn}
+
+    else:
+        app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 
     db.init_app(app)
 
@@ -108,6 +113,16 @@ def create_app():
     @app.route("/")
     def index():
         return "You're in the backend :)"
+
+    @app.route("/db_check")
+    def db_check():
+        try:
+            with db.engine.connect() as connection:
+                result = connection.execute(sqlalchemy.text("SELECT NOW()")).scalar()
+            return {"status": " Connected to Cloud SQL", "timestamp": str(result)}, 200
+        except Exception as e:
+            return {"status": " Connection failed", "error": str(e)}, 500
+
 
     with app.app_context():
         """
