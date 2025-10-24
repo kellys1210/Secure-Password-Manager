@@ -142,7 +142,7 @@ def delete_password():
         return jsonify({"error": str(e)}), 500
 
 
-@pw_manager_bp.route("/passwords", methods=["GET"])
+@pw_manager_bp.route("/passwords", methods=["POST"])
 def get_all_passwords():
     """
     Retrieve all application/password pairs for the authenticated user.
