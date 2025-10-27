@@ -118,6 +118,24 @@ def create_app():
 
     @app.route("/db_check")
     def db_check():
+        """
+        Verify active database connectivity and return current server time.
+
+        This endpoint checks whether the application can successfully connect
+        to the configured database (either local or Cloud SQL). It executes a simple
+        `SELECT NOW()` query to confirm connection health and retrieve a timestamp
+        from the database server.
+
+        Returns:
+            tuple: A JSON response and HTTP status code.
+                - On success: {"status": "Connected to <DB type>", "timestamp": "<UTC time>"}, 200
+                - On failure: {"status": "Connection to <DB type> failed", "error": "<error message>"}, 500
+
+        Note:
+            The response differentiates between Cloud SQL and local database connections
+            based on the `USE_CLOUD_SQL` environment variable. This endpoint is primarily
+            intended for deployment verification and troubleshooting.
+        """
         db_type = "Cloud SQL" if use_cloud_sql else "Local DB (flask_db)"
         try:
             with db.engine.connect() as connection:
