@@ -7,8 +7,10 @@ class Argon2Service:
     """Wrapper class for Argon2 password hashing operations."""
 
     def __init__(self):
-        """Initialize the Argon2 password hasher with default parameters."""
-        self._ph = PasswordHasher()
+        """Initialize the Argon2 password hasher with a max hash length of 255 characters to fit the database model."""
+        self._ph = PasswordHasher(
+            hash_len=255
+        )
 
     def hash_password(self, string: str) -> str:
         """
