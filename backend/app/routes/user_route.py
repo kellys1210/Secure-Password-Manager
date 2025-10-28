@@ -40,15 +40,14 @@ def register_user():
     """
     try:
         data = request.get_json()
-        new_username = ivs.clean_input(
-            data.get("username")
-        )
-        new_password = ivs.clean_input(
-            data.get("password")
-        )
+        username = data.get("username")
+        password = data.get("password")
 
-        if not new_username or not new_password:
+        if not username or not password:
             return jsonify({"error": "Username and password are required"}), 400
+
+        new_username = ivs.clean_input(username)
+        new_password = ivs.clean_input(password)
 
         # Check if user already exists
         if User.query.filter_by(username=new_username).first():
