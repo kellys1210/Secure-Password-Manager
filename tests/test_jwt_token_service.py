@@ -1,5 +1,8 @@
 # test_jwt_token_service.py
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import time
 from datetime import datetime, timedelta
 from unittest.mock import patch
@@ -31,7 +34,7 @@ class TestJwtToken:
 
         # Decode without verification to check structure
         decoded = jwt.decode(
-            token, jwt_handler.SECRET_KEY, algorithms=[jwt_handler.ALG]
+            token, jwt_handler.JWT_SECRET, algorithms=[jwt_handler.ALG]
         )
 
         assert decoded["sub"] == user_id
@@ -44,7 +47,7 @@ class TestJwtToken:
         token = jwt_handler.generate_jwt(user_id)
 
         decoded = jwt.decode(
-            token, jwt_handler.SECRET_KEY, algorithms=[jwt_handler.ALG]
+            token, jwt_handler.JWT_SECRET, algorithms=[jwt_handler.ALG]
         )
 
         assert decoded["sub"] == user_id
@@ -60,7 +63,7 @@ class TestJwtToken:
         # Decode WITHOUT validating expiration
         decoded = jwt.decode(
             token,
-            jwt_handler.SECRET_KEY,
+            jwt_handler.JWT_SECRET,
             algorithms=[jwt_handler.ALG],
             options={"verify_exp": False},
         )
@@ -139,7 +142,7 @@ class TestJwtToken:
         }
 
         token = jwt_handler._encode_jwt(header, custom_payload)
-        decoded = jwt.decode(token, jwt_handler.SECRET_KEY, algorithms=["HS256"])
+        decoded = jwt.decode(token, jwt_handler.JWT_SECRET, algorithms=["HS256"])
 
         assert decoded["sub"] == "custom_user"
         assert decoded["role"] == "admin"
@@ -161,14 +164,16 @@ class TestJwtToken:
 
         assert token1 != token2
 
-        decoded1 = jwt.decode(token1, jwt_handler.SECRET_KEY, algorithms=["HS256"])
-        decoded2 = jwt.decode(token2, jwt_handler.SECRET_KEY, algorithms=["HS256"])
+        decoded1 = jwt.decode(token1, jwt_handler.JWT_SECRET, algorithms=["HS256"])
+        decoded2 = jwt.decode(token2, jwt_handler.JWT_SECRET, algorithms=["HS256"])
 
         assert decoded1["sub"] != decoded2["sub"]
 
     def test_class_constants(self, jwt_handler):
         """Test that class constants are set correctly."""
-        assert jwt_handler.SECRET_KEY == "I'm super secret and never change"
+        assert jwt_handler.JWT_SECRET is not None
+        assert isinstance(jwt_handler.JWT_SECRET, str)
+        assert len(jwt_handler.JWT_SECRET) > 0
         assert jwt_handler.ALG == "HS256"
         assert jwt_handler.TOKEN_EXPIRATION_MINUTES == 30
 
@@ -189,7 +194,7 @@ class TestJwtToken:
     def test_generate_jwt_with_various_user_ids(self, jwt_handler, user_id):
         """Test that generate_jwt works with various user ID formats."""
         token = jwt_handler.generate_jwt(user_id)
-        decoded = jwt.decode(token, jwt_handler.SECRET_KEY, algorithms=["HS256"])
+        decoded = jwt.decode(token, jwt_handler.JWT_SECRET, algorithms=["HS256"])
         assert decoded["sub"] == user_id
 
     def test_get_username_from_valid_token(self, jwt_handler):

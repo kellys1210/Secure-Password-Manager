@@ -45,9 +45,9 @@ class TotpService:
         """
         Generate a random base32-encoded secret for TOTP.
 
-        :return: A 32-character base32 string suitable for TOTP
+        :return: A 32-character base32 string suitable for TOTP, limited to 255 characters for database storage.
         """
-        return pyotp.random_base32()
+        return pyotp.random_base32()[:255]
 
     @staticmethod
     def verify_totp_code(secret: str, user_code: str) -> bool:

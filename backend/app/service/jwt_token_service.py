@@ -3,8 +3,12 @@
 
 
 from datetime import datetime, timedelta
-
+import os
+from dotenv import load_dotenv
 import jwt
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 class JwtTokenService:
@@ -13,7 +17,8 @@ class JwtTokenService:
 
     Uses HS256 algorithm with a 30-minute token expiration period.
     """
-    SECRET_KEY = "I'm super secret and never change"
+
+    JWT_SECRET = os.getenv("JWT_SECRET")
     ALG = "HS256"
     TOKEN_EXPIRATION_MINUTES = 30
 
@@ -24,14 +29,11 @@ class JwtTokenService:
         :param username: Unique identifier for the user
         :return: Encoded JWT token as a string
         """
-        header = {
-            "alg": self.ALG,
-            "typ": "JWT"
-        }
+        header = {"alg": self.ALG, "typ": "JWT"}
         payload = {
             "sub": username,
             "iat": datetime.utcnow(),
-            "exp": datetime.utcnow() + timedelta(minutes=self.TOKEN_EXPIRATION_MINUTES)
+            "exp": datetime.utcnow() + timedelta(minutes=self.TOKEN_EXPIRATION_MINUTES),
         }
         return self._encode_jwt(header, payload)
 
@@ -43,9 +45,7 @@ class JwtTokenService:
         :return: True if token is valid, False otherwise
         """
         try:
-            return bool(
-                jwt.decode(encoded_jwt, self.SECRET_KEY, algorithms=["HS256"])
-            )
+            return bool(jwt.decode(encoded_jwt, self.JWT_SECRET, algorithms=["HS256"]))
         except:
             return False
 
@@ -57,11 +57,7 @@ class JwtTokenService:
         :return: Username if token is valid, None otherwise
         """
         try:
-            decoded = jwt.decode(
-                encoded_jwt,
-                self.SECRET_KEY,
-                algorithms=[self.ALG]
-            )
+            decoded = jwt.decode(encoded_jwt, self.JWT_SECRET, algorithms=[self.ALG])
             return decoded.get("sub")
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
             return None
@@ -74,11 +70,4 @@ class JwtTokenService:
         :param payload: JWT payload containing claims
         :return: Encoded JWT token as a string
         """
-        return jwt.encode(
-            payload,
-            self.SECRET_KEY,
-            algorithm="HS256",
-            headers=header
-        )
-
-
+        return jwt.encode(payload, self.JWT_SECRET, algorithm="HS256", headers=header)
