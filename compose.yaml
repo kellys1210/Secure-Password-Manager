@@ -41,13 +41,13 @@ services:
     depends_on:
       - flask_db
 
-  # frontend:
-  #   build: ./frontend
-  #   container_name: frontend-app
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - backend
+  frontend:
+    build: ./frontend
+    container_name: frontend-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
 
 volumes:
   db-data:
