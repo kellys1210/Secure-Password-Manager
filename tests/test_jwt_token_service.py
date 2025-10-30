@@ -3,6 +3,9 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import time
 from datetime import datetime, timedelta
 from unittest.mock import patch
@@ -171,7 +174,9 @@ class TestJwtToken:
 
     def test_class_constants(self, jwt_handler):
         """Test that class constants are set correctly."""
-        assert jwt_handler.JWT_SECRET == "I'm super secret and never change"
+        assert jwt_handler.JWT_SECRET is not None
+        assert isinstance(jwt_handler.JWT_SECRET, str)
+        assert len(jwt_handler.JWT_SECRET) > 0
         assert jwt_handler.ALG == "HS256"
         assert jwt_handler.TOKEN_EXPIRATION_MINUTES == 30
 

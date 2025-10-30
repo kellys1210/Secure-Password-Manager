@@ -5,10 +5,11 @@ from backend.app import db
 from backend.app.model import User
 from flask import Blueprint, request, jsonify
 
-from backend.app.service import Argon2Service
+from backend.app.service import Argon2Service, InputValidationService
 
 user_bp = Blueprint("user", __name__)
 argon2 = Argon2Service()
+ivs = InputValidationService()
 
 """
 Interaction with database container
@@ -39,15 +40,22 @@ def register_user():
     """
     try:
         data = request.get_json()
-        new_username = data.get("username")
-        new_password = data.get("password")
+        username = data.get("username")
+        password = data.get("password")
 
-        if not new_username or not new_password:
+        if not username or not password:
             return jsonify({"error": "Username and password are required"}), 400
+
+        new_username = ivs.clean_input(username)
+        new_password = ivs.clean_input(password)
 
         # Check if user already exists
         if User.query.filter_by(username=new_username).first():
             return jsonify({"error": "Username already exists"}), 409
+
+        # Check if username and password are valid
+        if not ivs.is_valid_master_username(new_username) or not ivs.is_valid_master_password(new_password):
+            return jsonify({"error": "Username or password are invalid"}), 400
 
         # Create master password hash
         new_password_hash = argon2.hash_password(new_password)
