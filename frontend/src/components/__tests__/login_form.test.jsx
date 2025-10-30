@@ -392,10 +392,10 @@ describe("LoginForm", () => {
 
       // Should not show the same error since email is now provided
       await waitFor(() => {
-        const newMessageElement = container.querySelector("p");
-        if (newMessageElement) {
-          expect(newMessageElement).not.toHaveTextContent("Email is required.");
-        }
+        const allMessages = Array.from(container.querySelectorAll("p")).map(
+          (p) => p.textContent
+        );
+        expect(allMessages).not.toContain("Email is required.");
       });
     });
   });
