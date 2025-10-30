@@ -49,7 +49,7 @@ def setup_totp():
         # Generate and store TOTP secret
         secret = totp.generate_secret()
         user.secret = secret
-        # Note: Not committing here as mentioned in the comment
+        db.session.commit()
 
         # Generate and return QR code image
         qr_image = totp.generate_qr_code_image(secret, username)
