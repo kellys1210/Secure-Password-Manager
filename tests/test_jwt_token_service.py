@@ -1,5 +1,8 @@
 # test_jwt_token_service.py
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import time
 from datetime import datetime, timedelta
 from unittest.mock import patch
