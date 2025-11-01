@@ -3,7 +3,8 @@
     "22": "^0.0.0",
     "email-validator": "^2.0.4",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
