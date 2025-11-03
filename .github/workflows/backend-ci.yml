@@ -9,11 +9,13 @@ on:
     paths:
       - "backend/**"
       - "compose.yaml"
+      - "tests/**"
   pull_request:
     branches: ["main"]
     paths:
       - "backend/**"
       - "compose.yaml"
+      - "tests/**"
 
 jobs:
   build:

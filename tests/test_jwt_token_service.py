@@ -1,4 +1,7 @@
-# test_jwt_token_service.py
+# test_jwt_token_service.
+
+from dotenv import load_dotenv
+load_dotenv()
 
 from dotenv import load_dotenv
 load_dotenv()
