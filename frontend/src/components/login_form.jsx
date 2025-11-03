@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom" ;
+import { useNavigate } from "react-router-dom";
 import { validate as validateEmail } from "email-validator";
 import { removeToken, apiFetch } from "../utils/auth.js";
 
@@ -13,6 +13,12 @@ export default function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
+  // Navigate to registration page
+  const registerButton = () => {
+    navigate("/register");
+  };
+
+  // Submit button for login
   const submit = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -61,23 +67,19 @@ export default function LoginForm() {
       const data = await response.json();
 
       if (response.ok) {
-        // Navigate to TOTP code entry. 
-         if (data.mfaRequired) { 
-          localStorage.setItem("login_username", emailNorm);
-          navigate("/verify_mfa");
-        } else {
-          setMessage("Unexpected response. Please try logging in again.");
-        }
+        // Navigate to TOTP code entry.
+        localStorage.setItem("login_username", emailNorm);
+        navigate("/verify_mfa");
       } else {
         // handle different error cases.
-        if (response.status === 401) {   
+        if (response.status === 401) {
           setMessage("Invalid credentials.");
-      } else if (response.status === 400) {
+        } else if (response.status === 400) {
           setMessage(data.error || "Bad request. Please check your input.");
-      } else {
+        } else {
           setMessage(data.error || "login failed.");
         }
-      }  
+      }
     } catch (error) {
       setMessage("Network error. Please check your connection and try again.");
       console.error("Login error:", error);
@@ -126,6 +128,10 @@ export default function LoginForm() {
 
       <button type="submit" disabled={submitting}>
         {submitting ? "Signing in..." : "Sign in"}
+      </button>
+
+      <button type="button" onClick={registerButton}>
+        Register
       </button>
 
       {/* Logout button - only show if there's a token */}
