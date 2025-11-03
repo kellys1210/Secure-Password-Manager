@@ -4,12 +4,14 @@ services:
     container_name: backend-services
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
       - FLASK_ENV=development
-      - DATABASE_URL=${DATABASE_URL}
     volumes:
       - .:/app
       - ./backend:/app/backend
+      - ~/.config/gcloud/application_default_credentials.json:/root/.config/gcloud/application_default_credentials.json
     depends_on:
       flask_db:
         condition: service_healthy
@@ -30,24 +32,24 @@ services:
       timeout: 5s
       retries: 5
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
-    ports:
-      - "5050:80"
-    depends_on:
-      - flask_db
+#   pgadmin:
+#     image: dpage/pgadmin4
+#     container_name: pgadmin
+#     environment:
+#       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+#       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+#     ports:
+#       - "5050:80"
+#     depends_on:
+#       - flask_db
 
-  # frontend:
-  #   build: ./frontend
-  #   container_name: frontend-app
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - backend
+#   # frontend:
+#   #   build: ./frontend
+#   #   container_name: frontend-app
+#   #   ports:
+#   #     - "3000:3000"
+#   #   depends_on:
+#   #     - backend
 
 volumes:
   db-data:
