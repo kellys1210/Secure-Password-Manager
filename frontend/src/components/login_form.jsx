@@ -1,4 +1,4 @@
-//https://www.npmjs.com/package/email-validator
+// https://www.npmjs.com/package/email-validator
 
 import React from "react";
 import { useState } from "react";
