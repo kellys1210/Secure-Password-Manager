@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom" ;
+import { useNavigate } from "react-router-dom";
 import { validate as validateEmail } from "email-validator";
 import { removeToken, apiFetch } from "../utils/auth.js";
 
@@ -12,12 +12,11 @@ export default function LoginForm() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  
-  // Navigate to registration page  
+
+  // Navigate to registration page
   const registerButton = () => {
     navigate("/register");
   };
-
 
   // Submit button for login
   const submit = async (e) => {
@@ -68,16 +67,16 @@ export default function LoginForm() {
       const data = await response.json();
 
       if (response.ok) {
-        // Navigate to TOTP code entry. 
+        // Navigate to TOTP code entry.
         localStorage.setItem("login_username", emailNorm);
         navigate("/verify_mfa");
-        } else {
-        // handle different error cases.
-        if (response.status === 401) {   
-          setMessage("Invalid credentials.");
-      } else if (response.status === 400) {
-          setMessage(data.error || "Bad request. Please check your input.");
       } else {
+        // handle different error cases.
+        if (response.status === 401) {
+          setMessage("Invalid credentials.");
+        } else if (response.status === 400) {
+          setMessage(data.error || "Bad request. Please check your input.");
+        } else {
           setMessage(data.error || "login failed.");
         }
       }  

@@ -3,6 +3,8 @@
 import React from "react";
 import { useState } from "react";
 import { validate as validateEmail } from "email-validator";
+import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/auth.js";
 
 export default function RegisterForm() {
   const [email, setEmail] = useState("");
@@ -10,6 +12,7 @@ export default function RegisterForm() {
   const [confirm, setConfirm] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,7 +46,7 @@ export default function RegisterForm() {
 
     try {
       // Make API call to register endpoint
-      const response = await fetch("http://localhost:8080/users/register", {
+      const response = await apiFetch("/users/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -59,6 +62,8 @@ export default function RegisterForm() {
       if (response.ok) {
         // Registration successful
         setMessage(`Success! Account created for ${email}`);
+        localStorage.setItem("login_username", email.trim());
+        navigate("/setup_mfa")
         setEmail("");
         setPassword("");
         setConfirm("");
