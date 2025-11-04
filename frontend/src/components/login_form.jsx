@@ -2,9 +2,9 @@
 
 import React from "react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom" ;
+import { useNavigate } from "react-router-dom";
 import { validate as validateEmail } from "email-validator";
-import { removeToken, apiFetch } from "../utils/auth.js";
+import { removeToken, storeToken } from "../utils/auth.js";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -12,12 +12,11 @@ export default function LoginForm() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  
-  // Navigate to registration page  
+
+  // Navigate to registration page
   const registerButton = () => {
     navigate("/register");
   };
-
 
   // Submit button for login
   const submit = async (e) => {
@@ -53,8 +52,8 @@ export default function LoginForm() {
     setSubmitting(true);
 
     try {
-      // Make API call to login endpoint using authenticatedFetch
-      const response = await apiFetch("/users/login", {
+      // Step 1: Make API call to login endpoint
+      const loginResponse = await fetch("http://localhost:8080/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -65,22 +64,45 @@ export default function LoginForm() {
         }),
       });
 
-      const data = await response.json();
+      const loginData = await loginResponse.json();
 
-      if (response.ok) {
-        // Navigate to TOTP code entry. 
-        localStorage.setItem("login_username", emailNorm);
-        navigate("/verify_mfa");
+      if (loginResponse.ok) {
+        // Step 2: Get JWT token from login
+        const tokenResponse = await fetch("http://localhost:8080/jwt/token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: emailNorm,
+          }),
+        });
+
+        const tokenData = await tokenResponse.json();
+
+        if (tokenResponse.ok) {
+          // Store JWT token
+          storeToken(tokenData.jwt);
+          setMessage("Login successful! Token stored.");
+
+          // Store username for later use (e.g., in verify_mfa)
+          localStorage.setItem("login_username", emailNorm);
+          navigate("/verify_mfa");
         } else {
-        // handle different error cases.
-        if (response.status === 401) {   
-          setMessage("Invalid credentials.");
-      } else if (response.status === 400) {
-          setMessage(data.error || "Bad request. Please check your input.");
-      } else {
-          setMessage(data.error || "login failed.");
+          setMessage(tokenData.error || "Failed to generate token");
         }
-      }  
+      } else {
+        // handle different error cases.
+        if (loginResponse.status === 401) {
+          setMessage("Invalid credentials.");
+        } else if (loginResponse.status === 400) {
+          setMessage(
+            loginData.error || "Bad request. Please check your input."
+          );
+        } else {
+          setMessage(loginData.error || "login failed.");
+        }
+      }
     } catch (error) {
       setMessage("Network error. Please check your connection and try again.");
       console.error("Login error:", error);
@@ -134,7 +156,6 @@ export default function LoginForm() {
       <button type="button" onClick={registerButton}>
         Register
       </button>
-
 
       {/* Logout button - only show if there's a token */}
       {localStorage.getItem("jwtToken") && (
