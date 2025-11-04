@@ -15,4 +15,4 @@ RUN pip install -e .
 
 EXPOSE 8080
 
-CMD [ "python", "backend/app.py" ]
+CMD ["/bin/sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} 'backend.app:create_app()'"]

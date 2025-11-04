@@ -79,7 +79,7 @@ export default function LoginForm() {
         } else {
           setMessage(data.error || "login failed.");
         }
-      }
+      }  
     } catch (error) {
       setMessage("Network error. Please check your connection and try again.");
       console.error("Login error:", error);
@@ -133,6 +133,7 @@ export default function LoginForm() {
       <button type="button" onClick={registerButton}>
         Register
       </button>
+
 
       {/* Logout button - only show if there's a token */}
       {localStorage.getItem("jwtToken") && (
