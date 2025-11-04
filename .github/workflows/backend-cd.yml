@@ -1,16 +1,20 @@
 # Source: https://miladezzat.medium.com/deploy-to-google-cloud-run-3cffcb2dbd5f
 
-name: Deploy Backend to Cloud Run
+name: Backend CD
 
 on:
   workflow_dispatch:
+
+  # This will run when merging backend PRs into main
   push:
     branches: ["main"]
     paths:
       - "backend/**"
       - "Dockerfile"
       - ".github/workflows/backend_cd.yml"
-  pull_request:   # TEMPORARY
+
+  # This will only run on PRs for testing the workflow itself    
+  pull_request:
     branches: ["main"]
     paths:
       - "Dockerfile"
@@ -63,9 +67,19 @@ jobs:
             DB_PORT=5432
             USE_CLOUD_SQL=true
 
+      # This creates an alias URL which can be used to check if the deployment was successful
+      # The stable backend URL is still https://backend-163526067001.us-west1.run.app/
       - name: Show deployed URL
         run: |
           echo "Successfully deployed new revision!"
           gcloud run services describe ${{ env.SERVICE_NAME }} \
             --region ${{ env.REGION }} \
             --format='value(status.url)'
+
+      # Uses the stable URL to test the DB connection
+      # Both alias and stable URLs reach the same container
+      - name: Verify Cloud SQL connectivity from deployed service
+        run: |
+          echo "Checking Cloud SQL connectivity via Cloud Run..."
+          sleep 10
+          curl -f https://backend-163526067001.us-west1.run.app/db_check
