@@ -4,10 +4,11 @@ from backend.app import db
 from backend.app.model import Entry, User
 from flask import Blueprint, request, jsonify
 
-from backend.app.service import JwtTokenService
+from backend.app.service import JwtTokenService, InputValidationService
 
 pw_manager_bp = Blueprint("pw_manager", __name__)
 jwt_token = JwtTokenService()
+ivs = InputValidationService
 
 
 @pw_manager_bp.route("/password", methods=["PUT"])
@@ -43,11 +44,7 @@ def add_update_password():
         # Validate required fields
         if not application or not application_username or not password:
             return (
-                jsonify(
-                    {
-                        "error": "Application name, application username, and password are required"
-                    }
-                ),
+                jsonify({"error": "Application name, application username, and password are required"}),
                 400,
             )
 
@@ -57,6 +54,10 @@ def add_update_password():
 
         if not user:
             return jsonify({"error": "User not found"}), 404
+
+        # Check if application username and password are valid before storing or updating in the database
+        if not ivs.is_valid_master_username(application_username) or not ivs.is_valid_master_password(password):
+            return jsonify({"error": "Username or password are invalid"}), 400
 
         # Check if entry already exists for this user and application
         existing_entry = Entry.query.filter_by(
@@ -142,7 +143,7 @@ def delete_password():
         return jsonify({"error": str(e)}), 500
 
 
-@pw_manager_bp.route("/passwords", methods=["GET"])
+@pw_manager_bp.route("/passwords", methods=["POST"])
 def get_all_passwords():
     """
     Retrieve all application/password pairs for the authenticated user.
