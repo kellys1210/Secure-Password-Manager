@@ -4,7 +4,7 @@ import React from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { validate as validateEmail } from "email-validator";
-import { removeToken, apiFetch } from "../utils/auth.js";
+import { removeToken } from "../utils/auth.js";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -52,8 +52,8 @@ export default function LoginForm() {
     setSubmitting(true);
 
     try {
-      // Make API call to login endpoint using authenticatedFetch
-      const response = await apiFetch("/users/login", {
+      // Make API call to login endpoint
+      const response = await fetch("http://localhost:8080/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -79,7 +79,7 @@ export default function LoginForm() {
         } else {
           setMessage(data.error || "login failed.");
         }
-      }  
+      }
     } catch (error) {
       setMessage("Network error. Please check your connection and try again.");
       console.error("Login error:", error);
@@ -133,7 +133,6 @@ export default function LoginForm() {
       <button type="button" onClick={registerButton}>
         Register
       </button>
-
 
       {/* Logout button - only show if there's a token */}
       {localStorage.getItem("jwtToken") && (
