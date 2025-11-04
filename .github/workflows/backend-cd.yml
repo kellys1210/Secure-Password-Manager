@@ -62,7 +62,6 @@ jobs:
             DB_HOST=/cloudsql/${{ secrets.DB_CONNECTION_NAME }}
             DB_PORT=5432
             USE_CLOUD_SQL=true
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
 
       - name: Show deployed URL
         run: |
