@@ -7,3 +7,136 @@ global.fetch = jest.fn();
 import { TextEncoder, TextDecoder } from "util";
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
+
+// Mock email-validator for Jest tests
+jest.mock("email-validator", () => ({
+  validate: (email) => {
+    // Simple RFC-compliant-ish email regex for testing
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  },
+}));
+
+// ============================================================================
+// COMPREHENSIVE FORM VALIDATION TEST SETUP
+// ============================================================================
+//
+// PROBLEM: Browser native form validation prevents form submissions with
+// invalid emails from reaching React's onSubmit handlers in test environment.
+//
+// When an <input type="email"> contains an invalid email and the form is
+// submitted, the browser's native validation system intercepts the submission
+// and prevents it from reaching React's event handlers. This causes our
+// custom validation logic to never execute in tests.
+//
+// SOLUTION: We disable native validation and ensure form submissions properly
+// trigger React event handlers by:
+// 1. Disabling native validation on all forms
+// 2. Ensuring submit events properly bubble to React handlers
+// 3. Providing consistent form submission behavior across tests
+//
+
+// Disable native form validation for all forms in tests
+Object.defineProperty(HTMLFormElement.prototype, "noValidate", {
+  get() {
+    return true; // Always disable native validation
+  },
+  set() {
+    // Ignore attempts to enable native validation in tests
+  },
+});
+
+// Ensure form submissions properly trigger React event handlers
+const originalSubmit = HTMLFormElement.prototype.submit;
+HTMLFormElement.prototype.submit = function () {
+  // Create and dispatch a submit event that React can handle
+  const submitEvent = new Event("submit", {
+    bubbles: true,
+    cancelable: true,
+  });
+
+  // Dispatch the event - React will handle it via onSubmit prop
+  const wasNotPrevented = this.dispatchEvent(submitEvent);
+
+  // Only call original submit if the event wasn't prevented
+  // (React's preventDefault would set defaultPrevented to true)
+  if (wasNotPrevented && !submitEvent.defaultPrevented) {
+    originalSubmit.call(this);
+  }
+};
+
+// Mock requestSubmit to ensure it works consistently in tests
+HTMLFormElement.prototype.requestSubmit = function (submitter) {
+  const submitEvent = new Event("submit", {
+    bubbles: true,
+    cancelable: true,
+  });
+
+  // Add submitter information if provided
+  if (submitter) {
+    submitEvent.submitter = submitter;
+  }
+
+  this.dispatchEvent(submitEvent);
+};
+
+// Disable native validation on individual input elements
+HTMLInputElement.prototype.checkValidity = function () {
+  // Always return true to bypass native validation
+  return true;
+};
+
+// Mock reportValidity to prevent native validation UI
+HTMLInputElement.prototype.reportValidity = function () {
+  return true;
+};
+
+HTMLFormElement.prototype.reportValidity = function () {
+  return true;
+};
+
+// Ensure form elements don't interfere with React state management
+Object.defineProperty(HTMLInputElement.prototype, "validity", {
+  get() {
+    return {
+      valid: true,
+      valueMissing: false,
+      typeMismatch: false,
+      patternMismatch: false,
+      tooLong: false,
+      tooShort: false,
+      rangeUnderflow: false,
+      rangeOverflow: false,
+      stepMismatch: false,
+      badInput: false,
+      customError: false,
+    };
+  },
+});
+
+// ============================================================================
+// TEST UTILITIES FOR FORM SUBMISSION
+// ============================================================================
+
+// Global utility for reliable form submission in tests
+global.submitFormReliably = async (formElement, user) => {
+  // Ensure form has noValidate attribute
+  formElement.setAttribute("novalidate", "");
+
+  // Find the submit button
+  const submitButton =
+    formElement.querySelector('button[type="submit"]') ||
+    formElement.querySelector('input[type="submit"]');
+
+  if (submitButton && user) {
+    // Use userEvent to click the submit button (most reliable)
+    await user.click(submitButton);
+  } else {
+    // Fallback: dispatch submit event directly
+    const submitEvent = new Event("submit", {
+      bubbles: true,
+      cancelable: true,
+    });
+    formElement.dispatchEvent(submitEvent);
+  }
+};

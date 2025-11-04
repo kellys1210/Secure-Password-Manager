@@ -31,4 +31,14 @@ export default defineConfig([
       },
     },
   },
+  {
+    files: ["**/__tests__/**", "**/*.test.{js,jsx}", "**/test-setup.js"],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+        ...globals.browser,
+        global: "readonly",
+      },
+    },
+  },
 ]);

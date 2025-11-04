@@ -112,15 +112,29 @@ describe("RegisterForm", () => {
     const user = userEvent.setup();
     render(<RegisterForm />);
 
-    await user.type(screen.getByLabelText(/email/i), "invalid-email");
-    await user.type(screen.getByLabelText(/^password:$/i), "password123");
-    await user.type(screen.getByLabelText(/confirm password/i), "password123");
-    await user.click(screen.getByRole("button", { name: /register/i }));
+    // Test with invalid email using reliable form submission
+    const emailInput = screen.getByLabelText(/email/i);
+    const passwordInput = screen.getByLabelText(/^password:$/i);
+    const confirmInput = screen.getByLabelText(/confirm password/i);
+    const form = screen.getByLabelText(/email/i).closest("form");
 
+    // Type invalid email and matching passwords
+    await user.clear(emailInput);
+    await user.type(emailInput, "invalid-email");
+    await user.type(passwordInput, "password123");
+    await user.type(confirmInput, "password123");
+
+    // Use reliable form submission utility
+    await global.submitFormReliably(form, user);
+
+    // Wait for validation to complete and check for error message
     await waitFor(() => {
       expect(
         screen.getByText(/please enter a valid email address/i)
       ).toBeInTheDocument();
     });
+
+    // Verify that no API call was made due to invalid email
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });
