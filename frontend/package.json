@@ -10,6 +10,7 @@
     "@babel/preset-env": "^7.28.5",
     "@babel/preset-react": "^7.28.5",
     "@eslint/js": "^9.37.0",
+    "@playwright/test": "^1.56.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -22,12 +23,24 @@
     "jest-environment-jsdom": "^29.7.0",
     "vite": "^7.1.9"
   },
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --port 3000",
     "lint": "eslint . --ext .js,.jsx --max-warnings=0",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:install": "playwright install",
+    "check-node-version": "node -e \"if(parseInt(process.version.slice(1).split('.')[0]) < 20 || (parseInt(process.version.slice(1).split('.')[0]) === 20 && parseInt(process.version.slice(1).split('.')[1]) < 19)) { console.error('❌ Node.js version must be 20.19.0 or higher'); process.exit(1); } else { console.log('✅ Node.js version compatible'); }\"",
+    "predev": "npm run check-node-version",
+    "pretest:e2e": "npm run check-node-version"
   }
 }
