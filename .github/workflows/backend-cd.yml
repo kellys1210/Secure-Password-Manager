@@ -61,7 +61,7 @@ jobs:
           flags: |
             --add-cloudsql-instances=${{ secrets.DB_CONNECTION_NAME }}
             --set-secrets="DB_USER=DB_USER:latest,DB_PASS=DB_PASS:latest,DB_NAME=DB_NAME:latest,DB_CONNECTION_NAME=DB_CONNECTION_NAME:latest"
-            --set-env-vars="DB_PORT=5432,USE_CLOUD_SQL=true,DB_HOST=/cloudsql/${{ secrets.DB_CONNECTION_NAME }}"
+            --set-env-vars="DB_PORT=5432,USE_CLOUD_SQL=true,INSTANCE_CONNECTION_NAME=${{ secrets.DB_CONNECTION_NAME }}"
         
       # This creates an alias URL which can be used to check if the deployment was successful
       # The stable backend URL is still https://backend-163526067001.us-west1.run.app/
