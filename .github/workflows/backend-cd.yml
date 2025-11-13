@@ -60,7 +60,7 @@ jobs:
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           flags: |
             --add-cloudsql-instances=${{ secrets.DB_CONNECTION_NAME }}
-            --set-secrets="DB_USER=projects/${{ secrets.GCP_PROJECT_ID }}/secrets/DB_USER:latest,DB_PASSWORD=projects/${{ secrets.GCP_PROJECT_ID }}/secrets/DB_PASSWORD:latest,DB_NAME=projects/${{ secrets.GCP_PROJECT_ID }}/secrets/DB_NAME:latest,DB_CONNECTION_NAME=projects/${{ secrets.GCP_PROJECT_ID }}/secrets/DB_CONNECTION_NAME:latest"
+            --set-secrets="DB_USER=DB_USER:latest,DB_PASSWORD=DB_PASSWORD:latest,DB_NAME=DB_NAME:latest,DB_CONNECTION_NAME=DB_CONNECTION_NAME:latest"
             --set-env-vars="DB_PORT=5432,USE_CLOUD_SQL=true,DB_HOST=/cloudsql/${{ secrets.DB_CONNECTION_NAME }}"
         
       # This creates an alias URL which can be used to check if the deployment was successful
