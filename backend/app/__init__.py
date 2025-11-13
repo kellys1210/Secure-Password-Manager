@@ -88,7 +88,11 @@ def create_app():
     # Configure CORS to allow requests from the React frontend
     CORS(
         app,
-        origins=["http://localhost:3000", "http://localhost:5173"],
+        origins=[
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "https://secure-pw-manager.netlify.app/"
+            ],
         methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Content-Type", "Authorization"],
     )
