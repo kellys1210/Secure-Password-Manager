@@ -3,8 +3,11 @@
 import React from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux"
 import { validate as validateEmail } from "email-validator";
-import { removeToken } from "../utils/auth.js";
+import { apiFetch, removeToken, logout } from "../utils/auth.js";
+import { cryptoUtils } from "../utils/crypto.js";
+import { setSecretKey, clearSecretKey } from "../store/keySlice.js";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -12,6 +15,7 @@ export default function LoginForm() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   // Navigate to registration page
   const registerButton = () => {
@@ -53,7 +57,7 @@ export default function LoginForm() {
 
     try {
       // Make API call to login endpoint
-      const response = await fetch("http://localhost:8080/users/login", {
+      const response = await apiFetch("/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -67,22 +71,37 @@ export default function LoginForm() {
       const data = await response.json();
 
       if (response.ok) {
-        // Navigate to TOTP code entry.
         localStorage.setItem("login_username", emailNorm);
+
+        //ensure Salt is returned from backend 
+        if (!data.salt) {
+          setMessage("Session invalid - please log in again.");
+          logout(navigate);
+          return;
+        }
+        
+        // Decode salt from backend and derive AES Key
+        const saltBuffer = cryptoUtils.base64toArrayBuffer(data.salt)               
+        const secretKey = await cryptoUtils.deriveSecretKey(password, saltBuffer);
+
+        // store the key in redux
+        dispatch(setSecretKey(secretKey));
+
+        // Navigate to verify page
         navigate("/verify_mfa");
       } else {
         // handle different error cases.
         if (response.status === 401) {
           setMessage("Invalid credentials.");
         } else if (response.status === 400) {
-          setMessage(data.error || "Bad request. Please check your input.");
+          setMessage(data.error || "Bad request. Please check your input."); // refactor this
         } else {
           setMessage(data.error || "login failed.");
         }
       }
     } catch (error) {
-      setMessage("Network error. Please check your connection and try again.");
       console.error("Login error:", error);
+      setMessage("Network error. Please check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -91,6 +110,8 @@ export default function LoginForm() {
   const handleLogout = () => {
     // Clear JWT token using utility function
     removeToken();
+    // Clear the redux secret key
+    dispatch(clearSecretKey());
     setMessage("You have been logged out.");
     // Reset form fields
     setEmail("");

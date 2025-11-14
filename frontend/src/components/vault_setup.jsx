@@ -1,8 +1,11 @@
 import React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector} from "react-redux";
 import { createOrUpdatePassword, getAllPasswords, deletePassword } from "../utils/vault";
-import { isAuthenticated, logout } from "../utils/auth";
+import { isAuthenticated, logout } from "../utils/auth.js";
+import { cryptoUtils } from "../utils/crypto.js";
+import { clearSecretKey } from "../store/keySlice.js";
 
 export default function VaultSetup () {
     const [application, setApplication] = useState("");
@@ -11,26 +14,52 @@ export default function VaultSetup () {
     const [message, setMessage] = useState("");
     const [entries, setEntries] = useState([]);
     const [submitting, setSubmitting] = useState(false);
+    const secretKey = useSelector((state) => state.secretKey.key);
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     
     // user is authenticated all password records load
     useEffect(() => {
         if (!isAuthenticated()) {
+            // Clear key and redirect to login
+            dispatch(clearSecretKey());
             logout(navigate);
-        } else {
+            // Have user login if unauthenticated or page reloaded. 
+        } else if  (!secretKey) {
+            navigate("/login");
+         } else {
             loadEntries();
         }
-    }, []);
+    }, [secretKey, dispatch, navigate]);
     
-    // Get passwords from backend 
+    // Load encrypted entries and decrypt with AES key
     const loadEntries = async () => {
         const result = await getAllPasswords();
         if (result.success) {
-            setEntries(result.passwords);
-        } else {
-            setMessage(result.error || "Failed to load entries.");
+            try {
+                const decrypted = await Promise.all(
+                    result.passwords.map(async (entry) => {
+                        const clearText = await cryptoUtils.decryptText(
+                            secretKey,
+                            entry.password,
+                        );
+                    return {
+                        application: entry.application,
+                        password: clearText,
+                    };
+                })
+            );
+            setEntries(decrypted);
+        } catch (err) {
+            console.error("Decryption failed:", err);
+            setMessage("Error decrypting vault entries, login again");
+            dispatch(clearSecretKey());
+            navigate("/login");
         }
-    };
+    } else {
+        setMessage(result.error || "Failed to load entries.");
+    }
+};
     
     // Form submission for creating or updating an entry
     const handleSubmit = async (e) => {
@@ -55,14 +84,22 @@ export default function VaultSetup () {
             return;
         }
 
+        if (!secretKey) {
+            setMessage("Authentication key error - please login again.");
+            navigate("/login");
+        }
+
         setSubmitting(true);
         
         // Make call to the backend and create or update a record. 
         try {
+            // send ciphertext and iv to backend for encryption
+            const encrypted = await cryptoUtils.encryptText(
+                secretKey, password );
             const result = await createOrUpdatePassword({
                 application, 
                 application_username: applicationUsername, 
-                password,
+                password: encrypted
             });
 
             if (result.success) {
@@ -84,13 +121,18 @@ export default function VaultSetup () {
     
     // Delete a password entry
     const handleDelete = async (appName) => {
-        const result = await deletePassword(appName);
-        if (result.success) {
+        try {
+            const result = await deletePassword(appName);
+            if (result.success) {
             setMessage("Entry deleted successfully.");
             await loadEntries();
         } else {
-            setMessage(result.error || "Failed to delete entry.");
+            throw new Error(result.error || "Failed to delete entry.");
         }
+    } catch (err) {
+        console.error("Delete entry error:", err);
+        setMessage("Failed to delete entry due to an error."); 
+    }
     };
 
     return ( 

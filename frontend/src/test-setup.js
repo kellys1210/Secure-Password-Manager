@@ -1,4 +1,12 @@
 import "@testing-library/jest-dom";
+import webcrypto from "crypto";
+
+// Crypto implementation.
+Object.defineProperty(globalThis, "crypto", {
+  value: webcrypto,
+  configurable: true,
+});
+
 
 // Mock global.fetch for all tests
 global.fetch = jest.fn();
