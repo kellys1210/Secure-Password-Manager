@@ -4,7 +4,7 @@ import React from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { validate as validateEmail } from "email-validator";
-import { removeToken } from "../utils/auth.js";
+import { apiFetch, removeToken } from "../utils/auth.js";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -53,7 +53,7 @@ export default function LoginForm() {
 
     try {
       // Make API call to login endpoint
-      const response = await fetch("http://localhost:8080/users/login", {
+      const response = await apiFetch("/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -139,8 +139,7 @@ export default function LoginForm() {
         <button
           type="button"
           onClick={handleLogout}
-          style={{ marginLeft: "10px" }}
-        >
+          style={{ marginLeft: "10px" }}>
           Logout
         </button>
       )}
