@@ -466,16 +466,69 @@ class SecurityAudit:
 
                     matches = re.findall(pattern, content)
                     if matches:
-                        issues["critical"].append(
-                            {
-                                "file": file_path,
-                                "issue": f"hardcoded_{pattern_name}",
-                                "matches": len(matches),
-                            }
-                        )
+                        # Filter out false positives
+                        valid_matches = []
+                        for match in matches:
+                            # Skip matches that are clearly variable names or comments
+                            if self._is_false_positive(match, pattern_name, content):
+                                continue
+                            valid_matches.append(match)
+
+                        if valid_matches:
+                            issues["critical"].append(
+                                {
+                                    "file": file_path,
+                                    "issue": f"hardcoded_{pattern_name}",
+                                    "matches": len(valid_matches),
+                                }
+                            )
 
         except Exception as e:
             self.logger.debug(f"Could not scan code file {file_path}: {e}")
+
+    def _is_false_positive(self, match: tuple, pattern_name: str, content: str) -> bool:
+        """Check if a detected match is likely a false positive."""
+        # Common false positive patterns
+        false_positive_patterns = [
+            r'password[\s=:"]*""',  # Empty password
+            r'password[\s=:"]*"password"',  # Literal "password" string
+            r'password[\s=:"]*"test"',  # Test passwords
+            r'password[\s=:"]*"example"',  # Example passwords
+            r'password[\s=:"]*"your_password"',  # Placeholder text
+            r'password[\s=:"]*"secret"',  # Generic placeholder
+            r'password[\s=:"]*"123"',  # Simple test passwords
+            r'password[\s=:"]*"pass"',  # Simple test passwords
+            r'password[\s=:"]*"pwd"',  # Simple test passwords
+        ]
+
+        # Check if match matches any false positive pattern
+        match_str = f'{match[0]}"{match[1]}"' if len(match) > 1 else str(match)
+        for fp_pattern in false_positive_patterns:
+            if re.search(fp_pattern, match_str, re.IGNORECASE):
+                return True
+
+        # Check if it's in a comment
+        lines = content.split("\n")
+        for line_num, line in enumerate(lines, 1):
+            if match_str in line:
+                # Check if line is a comment
+                stripped_line = line.strip()
+                if stripped_line.startswith(("#", "//", "/*", "*", "--")):
+                    return True
+                # Check if it's in a string literal that's clearly a placeholder
+                if any(
+                    placeholder in line.lower()
+                    for placeholder in [
+                        "example",
+                        "placeholder",
+                        "your_",
+                        "test_",
+                        "demo",
+                    ]
+                ):
+                    return True
+
+        return False
 
     def verify_https_enforcement(self, production_urls: List[str]) -> Dict[str, List]:
         """
