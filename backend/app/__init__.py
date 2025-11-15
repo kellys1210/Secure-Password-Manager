@@ -13,7 +13,7 @@ source: https://blog.devgenius.io/part-1-containerized-backend-with-flask-and-po
 
 import os
 
-from flask import Flask
+from flask import Flask, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 import sqlalchemy
 from flask_cors import CORS
@@ -21,6 +21,7 @@ from google.cloud.sql.connector import Connector, IPTypes
 import pg8000
 
 db = SQLAlchemy()
+
 
 def create_app():
     """
@@ -65,7 +66,7 @@ def create_app():
                 user=db_user,
                 password=db_pass,
                 db=db_name,
-        )
+            )
             return conn
 
         engine = sqlalchemy.create_engine(
@@ -75,7 +76,7 @@ def create_app():
             max_overflow=2,
             pool_timeout=30,
             pool_recycle=1800,
-            )
+        )
 
         app.config["SQLALCHEMY_DATABASE_URI"] = str(engine.url)
         app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"creator": getconn}
@@ -91,8 +92,8 @@ def create_app():
         origins=[
             "http://localhost:3000",
             "http://localhost:5173",
-            "https://secure-pw-manager.netlify.app"
-            ],
+            "https://secure-pw-manager.netlify.app",
+        ],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization"],
     )
@@ -114,7 +115,26 @@ def create_app():
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
         return response
+
+    # Enforce HTTPS
+    @app.before_request
+    def before_request():
+        # Skip HTTPS enforcement in development and testing environments
+        if app.debug or app.config.get("TESTING"):
+            return
+
+        # Skip for common development hosts
+        if not request.is_secure and not request.host.startswith(
+            ("localhost", "127.0.0.1", "::1")
+        ):
+            url = request.url.replace("http://", "https://", 1)
+            return redirect(
+                url, code=301
+            )  # HTTP - Permanent redirect response to browser
 
     @app.route("/")
     def index():
