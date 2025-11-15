@@ -53,7 +53,7 @@ class TestAuthEndpoints:
             # Hash the password that will be used in tests
             hashed_password = argon2.hash_password("testpassword")
             user = User(
-                username="testuser",
+                username="testuser@example.com",
                 password=hashed_password,
             )
             db.session.add(user)
@@ -63,7 +63,7 @@ class TestAuthEndpoints:
     def test_user_registration_success(self, client):
         """Test successful user registration"""
         user_data = {
-            "username": "newuser",
+            "username": "newuser@example.com",
             "password": "SecurePassword123!",
         }
 
@@ -97,7 +97,7 @@ class TestAuthEndpoints:
 
     def test_user_login_success(self, client, test_user):
         """Test successful user login"""
-        login_data = {"username": "testuser", "password": "testpassword"}
+        login_data = {"username": "testuser@example.com", "password": "testpassword"}
 
         response = client.post(
             "/users/login", data=json.dumps(login_data), content_type="application/json"
@@ -110,7 +110,7 @@ class TestAuthEndpoints:
 
     def test_user_login_invalid_credentials(self, client, test_user):
         """Test login with invalid credentials"""
-        login_data = {"username": "testuser", "password": "wrongpassword"}
+        login_data = {"username": "testuser@example.com", "password": "wrongpassword"}
 
         response = client.post(
             "/users/login", data=json.dumps(login_data), content_type="application/json"
@@ -122,7 +122,7 @@ class TestAuthEndpoints:
 
     def test_jwt_token_generation(self, client, test_user):
         """Test JWT token generation endpoint"""
-        token_data = {"username": "testuser"}
+        token_data = {"username": "testuser@example.com"}
 
         response = client.post(
             "/jwt/token", data=json.dumps(token_data), content_type="application/json"
@@ -148,7 +148,7 @@ class TestAuthEndpoints:
     def test_jwt_token_verification_valid(self, client, test_user):
         """Test JWT token verification with valid token"""
         # First get a token
-        token_data = {"username": "testuser"}
+        token_data = {"username": "testuser@example.com"}
         token_response = client.post(
             "/jwt/token", data=json.dumps(token_data), content_type="application/json"
         )
@@ -178,7 +178,7 @@ class TestAuthEndpoints:
 
     def test_totp_setup_success(self, client, test_user):
         """Test TOTP setup endpoint"""
-        setup_data = {"username": "testuser"}
+        setup_data = {"username": "testuser@example.com"}
 
         response = client.post(
             "/totp/setup", data=json.dumps(setup_data), content_type="application/json"
@@ -202,7 +202,7 @@ class TestAuthEndpoints:
     def test_totp_verification_success(self, client, test_user):
         """Test TOTP verification with valid code"""
         # First setup TOTP (this would store a secret)
-        setup_data = {"username": "testuser"}
+        setup_data = {"username": "testuser@example.com"}
         client.post(
             "/totp/setup", data=json.dumps(setup_data), content_type="application/json"
         )
@@ -210,7 +210,7 @@ class TestAuthEndpoints:
         # Note: In a real test, we'd need to generate a valid TOTP code
         # For now, we'll test the endpoint structure
         verify_data = {
-            "username": "testuser",
+            "username": "testuser@example.com",
             "code": "123456",  # This would need to be a valid TOTP code
         }
 
@@ -227,7 +227,7 @@ class TestAuthEndpoints:
     def test_totp_verification_missing_fields(self, client):
         """Test TOTP verification with missing required fields"""
         verify_data = {
-            "username": "testuser"
+            "username": "testuser@example.com"
             # Missing code
         }
 

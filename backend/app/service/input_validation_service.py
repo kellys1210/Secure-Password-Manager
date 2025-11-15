@@ -1,7 +1,7 @@
 # input_validation_service.py
 
 import re
-from typing import Any, Union
+from typing import Any
 
 
 class InputValidationService:
@@ -10,8 +10,7 @@ class InputValidationService:
     Provides protection against XSS attacks and ensures data integrity.
     """
 
-    @staticmethod
-    def is_valid_master_username(username: str) -> bool:
+    def is_valid_master_username(self, username: str) -> bool:
         """
         Validates that a master username meets security requirements.
 
@@ -27,12 +26,7 @@ class InputValidationService:
         # Username is correct length
         if len(username) < 1 or len(username) > 80:
             return False
-
-        # Username contains only alphanumeric characters, underscores and hyphens
-        if not re.match(r'^[a-zA-Z0-9_-]+$', username):
-            return False
-
-        return True
+        return self.is_valid_email(username)
 
     @staticmethod
     def is_valid_master_password(master_password: str) -> bool:
@@ -64,7 +58,10 @@ class InputValidationService:
         :param username: The application username to validate
         :return: True if valid, False otherwise
         """
-        return self.is_valid_master_username(username) and not self._contains_xss_risk(username)
+        # Username is correct length
+        if 1 <= len(username) <= 80 and not self._contains_xss_risk(username):
+            return True
+        return False
 
     def is_valid_application_password(self, password: str) -> bool:
         """
@@ -77,7 +74,9 @@ class InputValidationService:
         :param password: The application password to validate
         :return: True if valid, False otherwise
         """
-        return self.is_valid_master_password(password) and not self._contains_xss_risk(password)
+        return self.is_valid_master_password(password) and not self._contains_xss_risk(
+            password
+        )
 
     @staticmethod
     def clean_input(user_input: Any) -> str:
@@ -93,6 +92,20 @@ class InputValidationService:
         if isinstance(user_input, str):
             return user_input.strip()
         return str(user_input).strip()
+
+    @staticmethod
+    def is_valid_email(email: str) -> bool:
+        """
+        Validates if a string is a valid email address format.
+
+        Uses regex pattern matching to verify the email structure contains
+        valid characters, an @ symbol, and a domain with extension.
+
+        :param email: The email address to validate
+        :return: True if email format is valid, False otherwise
+        """
+        valid_email_regex = r"^[a-z0-9_]+[\._]?[a-z0-9_]*[@]\w+[\w.-]*[.]\w+$"
+        return bool(re.match(valid_email_regex, email))
 
     @staticmethod
     def _contains_xss_risk(user_input: str) -> bool:
@@ -112,18 +125,18 @@ class InputValidationService:
             user_input = str(user_input)
 
         # Check for HTML tags
-        if re.search(r'<[^>]*>', user_input):
+        if re.search(r"<[^>]*>", user_input):
             return True
 
         # Check for common XSS patterns
         xss_patterns = [
-            r'javascript:',
-            r'on\w+\s*=',  # Event handlers like onclick=, onload=
-            r'<script',
-            r'</script',
-            r'<iframe',
-            r'<object',
-            r'<embed',
+            r"javascript:",
+            r"on\w+\s*=",  # Event handlers like onclick=, onload=
+            r"<script",
+            r"</script",
+            r"<iframe",
+            r"<object",
+            r"<embed",
         ]
 
         for pattern in xss_patterns:
