@@ -13,7 +13,7 @@ source: https://blog.devgenius.io/part-1-containerized-backend-with-flask-and-po
 
 import os
 
-from flask import Flask
+from flask import Flask, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 import sqlalchemy
 from flask_cors import CORS
@@ -115,6 +115,13 @@ def create_app():
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         return response
+
+    # Enforce HTTPS
+    @app.before_request
+    def before_request():
+        if not request.is_secure and not request.host.startswith("localhost"):
+            url = request.url.replace('http://', 'https://', 1)
+            return redirect(url, code=301)  # HTTP - Permanent redirect response to browser
 
     @app.route("/")
     def index():
