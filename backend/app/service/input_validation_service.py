@@ -74,7 +74,9 @@ class InputValidationService:
         :param password: The application password to validate
         :return: True if valid, False otherwise
         """
-        return self.is_valid_master_password(password) and not self._contains_xss_risk(password)
+        return self.is_valid_master_password(password) and not self._contains_xss_risk(
+            password
+        )
 
     @staticmethod
     def clean_input(user_input: Any) -> str:
@@ -102,7 +104,7 @@ class InputValidationService:
         :param email: The email address to validate
         :return: True if email format is valid, False otherwise
         """
-        valid_email_regex = r'^[a-z0-9]+[\._]?[a-z0-9]*[@]\w+[\w.-]*[.]\w+$'
+        valid_email_regex = r"^[a-z0-9_]+[\._]?[a-z0-9_]*[@]\w+[\w.-]*[.]\w+$"
         return bool(re.match(valid_email_regex, email))
 
     @staticmethod
@@ -123,18 +125,18 @@ class InputValidationService:
             user_input = str(user_input)
 
         # Check for HTML tags
-        if re.search(r'<[^>]*>', user_input):
+        if re.search(r"<[^>]*>", user_input):
             return True
 
         # Check for common XSS patterns
         xss_patterns = [
-            r'javascript:',
-            r'on\w+\s*=',  # Event handlers like onclick=, onload=
-            r'<script',
-            r'</script',
-            r'<iframe',
-            r'<object',
-            r'<embed',
+            r"javascript:",
+            r"on\w+\s*=",  # Event handlers like onclick=, onload=
+            r"<script",
+            r"</script",
+            r"<iframe",
+            r"<object",
+            r"<embed",
         ]
 
         for pattern in xss_patterns:
