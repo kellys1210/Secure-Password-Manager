@@ -762,23 +762,36 @@ class SecurityAudit:
 
     def _format_issue_description(self, issue: Dict, category: str) -> str:
         """Format issue description for console output."""
-        if category == "plaintext_leaks":
-            if "file" in issue:
-                return f"Plaintext {issue['pattern']} detected in {issue['file']}:{issue['line']}"
-            elif "container" in issue:
-                return f"Plaintext {issue['pattern']} in Docker container {issue['container']}:{issue['line']}"
-            elif "endpoint" in issue:
-                return f"Sensitive data in API response: {issue['endpoint']} - {issue['pattern']}"
+        try:
+            if category == "plaintext_leaks":
+                if "file" in issue:
+                    pattern = issue.get("pattern", "sensitive_data")
+                    return f"Plaintext {pattern} detected in {issue['file']}:{issue['line']}"
+                elif "container" in issue:
+                    pattern = issue.get("pattern", "sensitive_data")
+                    return f"Plaintext {pattern} in Docker container {issue['container']}:{issue['line']}"
+                elif "endpoint" in issue:
+                    pattern = issue.get("pattern", "sensitive_data")
+                    return f"Sensitive data in API response: {issue['endpoint']} - {pattern}"
 
-        elif category == "env_security":
-            if "file" in issue:
-                return f"{issue['issue'].replace('_', ' ').title()} in {issue['file']}"
+            elif category == "env_security":
+                if "file" in issue:
+                    issue_desc = (
+                        issue.get("issue", "security_issue").replace("_", " ").title()
+                    )
+                    return f"{issue_desc} in {issue['file']}"
 
-        elif category == "https_enforcement":
-            if "url" in issue:
-                return f"{issue['issue'].replace('_', ' ').title()}: {issue['url']}"
+            elif category == "https_enforcement":
+                if "url" in issue:
+                    issue_desc = (
+                        issue.get("issue", "security_issue").replace("_", " ").title()
+                    )
+                    return f"{issue_desc}: {issue['url']}"
 
-        return str(issue)
+            return str(issue)
+        except Exception as e:
+            self.logger.warning(f"Error formatting issue description: {e}")
+            return f"Security issue in {category}: {issue}"
 
     def _generate_json_report(
         self, critical: int, warnings: int, secure: int, duration: float
