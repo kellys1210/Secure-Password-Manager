@@ -160,8 +160,7 @@ export default function LoginForm() {
         <button
           type="button"
           onClick={handleLogout}
-          style={{ marginLeft: "10px" }}
-        >
+          style={{ marginLeft: "10px" }}>
           Logout
         </button>
       )}

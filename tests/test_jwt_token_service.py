@@ -1,14 +1,16 @@
 # test_jwt_token_service.
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 import time
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import jwt
 import pytest
@@ -76,9 +78,14 @@ class TestJwtToken:
         assert decoded["sub"] == "user123"
 
     def test_validate_jwt_accepts_valid_token(self, jwt_handler):
-        """Test that _validate_jwt returns True for a valid token."""
+        """Test that validate_jwt returns True for a valid token."""
         token = jwt_handler.generate_jwt("user123")
-        assert jwt_handler.validate_jwt(token) is True
+
+        with patch('backend.app.service.jwt_token_service.JwtDenyList') as mock_denylist:
+            # Mock that token is NOT on deny list
+            mock_denylist.query.filter_by.return_value.first.return_value = None
+
+            assert jwt_handler.validate_jwt(token) is True
 
     def test_validate_jwt_rejects_invalid_signature(self, jwt_handler):
         """Test that _validate_jwt returns False for a token with invalid signature."""
@@ -263,3 +270,55 @@ class TestJwtToken:
         extracted_username = jwt_handler.get_username_from_jwt(token)
 
         assert extracted_username == username
+
+    def test_validate_jwt_with_token_on_deny_list(self, jwt_handler):
+        """Test that validate_jwt returns False for a token on the deny list."""
+        token = jwt_handler.generate_jwt("user123")
+
+        with patch('backend.app.service.jwt_token_service.JwtDenyList') as mock_denylist:
+            # Mock that token IS on deny list
+            mock_denied_token = MagicMock()
+            mock_denied_token.token = token
+            mock_denylist.query.filter_by.return_value.first.return_value = mock_denied_token
+
+            assert jwt_handler.validate_jwt(token) is False
+
+    def test_validate_jwt_with_token_not_on_deny_list(self, jwt_handler):
+        """Test that validate_jwt returns True for a valid token not on the deny list."""
+        token = jwt_handler.generate_jwt("user456")
+
+        with patch('backend.app.service.jwt_token_service.JwtDenyList') as mock_denylist:
+            # Mock that token is NOT on deny list
+            mock_denylist.query.filter_by.return_value.first.return_value = None
+
+            assert jwt_handler.validate_jwt(token) is True
+
+    def test_add_jwt_to_deny_list(self, jwt_handler):
+        """Test adding a JWT token to the deny list."""
+        token = jwt_handler.generate_jwt("test_user")
+
+        with patch('backend.app.service.jwt_token_service.db') as mock_db, \
+                patch('backend.app.service.jwt_token_service.JwtDenyList') as mock_denylist:
+            # Call add_jwt_to_deny_list
+            jwt_handler.add_jwt_to_deny_list(token)
+
+            # Verify JwtDenyList was instantiated with the token
+            mock_denylist.assert_called_once_with(token=token)
+
+            # Verify db.session.add was called
+            mock_db.session.add.assert_called_once()
+
+            # Verify db.session.commit was called
+            mock_db.session.commit.assert_called_once()
+
+    def test_add_jwt_to_deny_list_with_empty_token(self, jwt_handler):
+        """Test adding an empty token to the deny list raises ValueError."""
+        empty_token = ""
+
+        with pytest.raises(ValueError, match="Token cannot be empty or None"):
+            jwt_handler.add_jwt_to_deny_list(empty_token)
+
+    def test_add_jwt_to_deny_list_with_none_token(self, jwt_handler):
+        """Test adding None token to the deny list raises ValueError."""
+        with pytest.raises(ValueError, match="Token cannot be empty or None"):
+            jwt_handler.add_jwt_to_deny_list(None)
