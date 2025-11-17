@@ -223,7 +223,7 @@ export async function validateMasterPassword(encryptedData, masterPassword) {
   try {
     await decryptPassword(encryptedData, masterPassword);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

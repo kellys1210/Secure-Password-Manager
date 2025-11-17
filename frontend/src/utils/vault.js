@@ -1,10 +1,4 @@
 import { getToken, apiFetch } from "./auth";
-import {
-  encryptPassword,
-  decryptPassword,
-  encryptPasswordBatch,
-  decryptPasswordBatch,
-} from "./crypto";
 
 /**
  * A PUT request to the backend to create or update a password entry.
