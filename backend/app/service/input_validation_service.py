@@ -24,7 +24,7 @@ class InputValidationService:
         username = username.strip()
 
         # Username is correct length
-        if len(username) < 1 or len(username) > 80:
+        if not (1 <= len(username) <= 80):
             return False
         return self.is_valid_email(username)
 
@@ -42,7 +42,7 @@ class InputValidationService:
         master_password = master_password.strip()
 
         # Password meets minimum length requirement
-        if len(master_password) < 8 or len(master_password) > 255:
+        if not (8 <= len(master_password) <= 512):
             return False
 
         return True
