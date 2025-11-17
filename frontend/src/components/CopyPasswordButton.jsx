@@ -106,3 +106,18 @@ export default function CopyPasswordButton({
     </div>
   );
 }
+
+CopyPasswordButton.propTypes = {
+  password: PropTypes.string.isRequired,
+  label: PropTypes.string,
+  showStatus: PropTypes.bool,
+  onCopySuccess: PropTypes.func,
+  onCopyError: PropTypes.func,
+};
+
+CopyPasswordButton.defaultProps = {
+  label: "Copy",
+  showStatus: true,
+  onCopySuccess: () => {},
+  onCopyError: () => {},
+};

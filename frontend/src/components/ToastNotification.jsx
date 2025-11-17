@@ -56,3 +56,16 @@ export default function ToastNotification({
     </div>
   );
 }
+
+ToastNotification.propTypes = {
+  message: PropTypes.string.isRequired,
+  type: PropTypes.oneOf(["success", "error", "info", "warning"]),
+  duration: PropTypes.number,
+  onDismiss: PropTypes.func,
+};
+
+ToastNotification.defaultProps = {
+  type: "info",
+  duration: 3000,
+  onDismiss: () => {},
+};
