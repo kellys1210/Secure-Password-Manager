@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify, send_file
 
 from backend.app.service import TotpService, JwtTokenService
 from backend.app import db
+import pyotp
 
 totp_bp = Blueprint("totp", __name__)
 totp = TotpService()
@@ -34,6 +35,10 @@ def setup_totp():
         The TOTP secret is stored in the database but not committed in this endpoint.
         Ensure db.session.commit() is called after successful TOTP verification.
     """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
     try:
         data = request.get_json()
         username = data.get("username")
@@ -51,6 +56,15 @@ def setup_totp():
         user.secret = secret
         db.session.commit()
 
+        # Log the secret for debugging (should be removed in production)
+        logger.info(f"TOTP setup for user {username} - Secret: {secret}")
+
+        # Generate TOTP URI for verification
+        totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
+            name=username, issuer_name=totp.ISSUER
+        )
+        logger.info(f"TOTP URI: {totp_uri}")
+
         # Generate and return QR code image
         qr_image = totp.generate_qr_code_image(secret, username)
         return send_file(
@@ -62,6 +76,7 @@ def setup_totp():
 
     except Exception as e:
         db.session.rollback()
+        logger.error(f"TOTP setup error: {str(e)}")
         return (
             jsonify({"error": "Failed to generate TOTP setup", "details": str(e)}),
             500,
@@ -96,28 +111,41 @@ def verify_totp():
     Error responses:
         - 400: {"error": "Username and code are required"}
         - 401: {"error": "Username not found"} or {"error": "Invalid TOTP code"}
-        - 404: {"error": "TOTP not set up for this user"}
+        - 404: {"error": "TOTP not up for this user"}
         - 500: {"error": "<error_message>"}
     """
+    import logging
+    import time
+
+    logger = logging.getLogger(__name__)
+
     try:
         data = request.get_json()
         username = data.get("username")
         user_code = data.get("code")
+
+        logger.info(f"TOTP verify request - Username: {username}, Code: {user_code}")
+
         if not username or not user_code:
             return jsonify({"error": "Username and code are required"}), 400
 
-        # Check if user exists, and password is valid
+        # Check if user exists
         user = User.query.filter_by(username=username).first()
         if not user:
+            logger.warning(f"User not found: {username}")
             return jsonify({"error": "Username not found"}), 401
 
         # Verify TOTP with user secret
         secret = user.secret
         if not secret:
+            logger.warning(f"TOTP not set up for user: {username}")
             return jsonify({"error": "TOTP not set up for this user"}), 404
+
+        logger.info(f"Found secret for user {username}, length: {len(secret)}")
 
         # Verify TOTP Code, return JWT session token if successful
         if totp.verify_totp_code(secret, user_code):
+            logger.info(f"TOTP verification successful for user: {username}")
             return (
                 jsonify(
                     {
@@ -128,7 +156,21 @@ def verify_totp():
                 200,
             )
         else:
+            logger.warning(f"TOTP verification failed for user: {username}")
+            # Log current server time and valid codes for debugging
+            current_time = time.time()
+            totp_for_debug = pyotp.TOTP(secret)
+            logger.info(f"Server time: {current_time}")
+            logger.info(f"Current valid code: {totp_for_debug.now()}")
+            logger.info(
+                f"Previous window code: {totp_for_debug.at(for_time=current_time - 30)}"
+            )
+            logger.info(
+                f"Next window code: {totp_for_debug.at(for_time=current_time + 30)}"
+            )
+
             return jsonify({"error": "Invalid TOTP code"}), 401
 
     except Exception as e:
+        logger.error(f"TOTP verification error: {str(e)}")
         return jsonify({"error": str(e)}), 500

@@ -8,6 +8,7 @@ The QR codes follow the Key URI Format specification and can be scanned by authe
 like Google Authenticator, Authy, or Microsoft Authenticator.
 """
 import io
+import logging
 
 import pyotp
 import qrcode
@@ -27,14 +28,18 @@ class TotpService:
         :param username: The username/email to associate with this TOTP secret
         :return: BytesIO buffer containing PNG image data of the QR code
         """
+        logger = logging.getLogger(__name__)
+
         if not secret or not username or not self.ISSUER:
-            raise ValueError("Secret, username, or issuer not provided when trying to generated a QR code image.")
+            raise ValueError(
+                "Secret, username, or issuer not provided when trying to generated a QR code image."
+            )
 
         totp_uri = self._get_totp_uri(
-            secret=secret,
-            username=username,
-            issuer=self.ISSUER
+            secret=secret, username=username, issuer=self.ISSUER
         )
+        logger.info(f"Generated TOTP URI for {username}: {totp_uri}")
+
         image = self._create_qr(totp_uri)
         image_bytes = self._convert_image_to_bytesio(image)
 
@@ -47,7 +52,9 @@ class TotpService:
 
         :return: A 32-character base32 string suitable for TOTP, limited to 255 characters for database storage.
         """
-        return pyotp.random_base32()[:255]
+        secret = pyotp.random_base32()[:255]
+        logging.getLogger(__name__).info(f"Generated new TOTP secret: {secret}")
+        return secret
 
     @staticmethod
     def verify_totp_code(secret: str, user_code: str) -> bool:
@@ -58,10 +65,28 @@ class TotpService:
         :param user_code: The 6-digit code entered by the user
         :return: True if the code is valid, False otherwise
         """
+        logger = logging.getLogger(__name__)
+
         if not secret or not user_code:
-            raise ValueError("Secret or User Code not provided when trying to verify TOTP code.")
+            raise ValueError(
+                "Secret or User Code not provided when trying to verify TOTP code."
+            )
+
+        logger.info(
+            f"Verifying TOTP code - Secret length: {len(secret)}, Code: {user_code}"
+        )
+
         totp = pyotp.TOTP(secret)
-        return totp.verify(user_code)  # Default 30 second validity
+        import time
+
+        current_time = int(time.time())
+        logger.info(f"Current timestamp: {current_time}")
+        logger.info(f"Current valid code: {totp.now()}")
+
+        is_valid = totp.verify(user_code)
+        logger.info(f"TOTP verification result: {is_valid}")
+
+        return is_valid  # Default 30 second validity
 
     @staticmethod
     def _get_totp_uri(secret: str, username: str, issuer: str) -> str:
@@ -76,8 +101,7 @@ class TotpService:
         :return: Formatted TOTP URI string ready for QR code encoding
         """
         return pyotp.totp.TOTP(secret).provisioning_uri(
-            name=username,
-            issuer_name=issuer
+            name=username, issuer_name=issuer
         )
 
     @staticmethod
