@@ -8,6 +8,11 @@ import { TextEncoder, TextDecoder } from "util";
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
+// Polyfill for Web Crypto API in Node.js test environment
+import { Crypto } from "@peculiar/webcrypto";
+const crypto = new Crypto();
+global.crypto = crypto;
+
 // Mock email-validator for Jest tests
 jest.mock("email-validator", () => ({
   validate: (email) => {
