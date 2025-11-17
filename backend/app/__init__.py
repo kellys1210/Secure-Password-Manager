@@ -127,8 +127,11 @@ def create_app():
         if app.debug or app.config.get("TESTING"):
             return
 
+        # Detect protocol of original request from Cloud Run, defaults to http
+        proto = request.headers.get("X-Forwarded-Proto", "http")
+
         # Skip for common development hosts
-        if not request.is_secure and not request.host.startswith(
+        if proto != "https" and not request.host.startswith(
             ("localhost", "127.0.0.1", "::1")
         ):
             url = request.url.replace("http://", "https://", 1)

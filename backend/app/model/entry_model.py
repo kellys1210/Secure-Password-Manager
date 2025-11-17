@@ -59,7 +59,7 @@ class Entry(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     application = db.Column(db.String(120), nullable=False)
     username = db.Column(db.String(80), nullable=False)
-    password = db.Column(db.String(255), nullable=False)
+    password = db.Column(db.Text, nullable=False)
 
     def __str__(self):
         """
