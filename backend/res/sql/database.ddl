@@ -3,7 +3,8 @@ CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username VARCHAR(80) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    secret VARCHAR(255)
+    secret VARCHAR(255),
+    encryption_salt VARCHAR(64)
 );
 
 -- Entries table
@@ -12,7 +13,7 @@ CREATE TABLE entries (
     user_id INTEGER NOT NULL,
     application VARCHAR(120) NOT NULL,
     username VARCHAR(80) NOT NULL,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(512) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

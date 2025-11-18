@@ -1,8 +1,10 @@
 {
   "dependencies": {
+    "@reduxjs/toolkit": "^2.10.1",
     "email-validator": "^2.0.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-redux": "^9.2.0",
     "react-router-dom": "^7.9.5"
   },
   "devDependencies": {
@@ -14,6 +16,8 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "babel-jest": "^29.7.0",
+    "babel-plugin-transform-import-meta": "^2.3.3",
+    "dotenv": "^17.2.3",
     "eslint": "^9.37.0",
     "eslint-plugin-jest": "^29.0.1",
     "eslint-plugin-react": "^7.37.5",

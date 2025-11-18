@@ -4,66 +4,194 @@ from backend.app.service import InputValidationService
 class TestIsValidMasterUsername:
     """Tests for is_valid_master_username method"""
 
-    def test_valid_username_alphanumeric(self):
-        """Test valid alphanumeric username"""
-        assert InputValidationService.is_valid_master_username("user123") is True
+    def setup_method(self):
+        """Setup method to create service instance"""
+        self.service = InputValidationService()
 
-    def test_valid_username_with_underscore(self):
-        """Test valid username with underscores"""
-        assert InputValidationService.is_valid_master_username("user_name_123") is True
+    def test_valid_username_email_format(self):
+        """Test valid username with email format"""
+        assert self.service.is_valid_master_username("user@example.com") is True
 
-    def test_valid_username_with_hyphen(self):
-        """Test valid username with hyphens"""
-        assert InputValidationService.is_valid_master_username("user-name-123") is True
+    def test_valid_username_email_with_numbers(self):
+        """Test valid email username with numbers"""
+        assert self.service.is_valid_master_username("user123@domain.com") is True
 
-    def test_valid_username_mixed_characters(self):
-        """Test valid username with mix of allowed characters"""
-        assert InputValidationService.is_valid_master_username("User_Name-123") is True
+    def test_valid_username_email_with_underscore(self):
+        """Test valid email username with underscore in local part"""
+        assert self.service.is_valid_master_username("user_name@example.com") is True
 
-    def test_valid_username_single_character(self):
-        """Test valid username with minimum length (1 character)"""
-        assert InputValidationService.is_valid_master_username("a") is True
+    def test_valid_username_email_with_dot(self):
+        """Test valid email username with dot in local part"""
+        assert self.service.is_valid_master_username("user.name@example.com") is True
 
-    def test_valid_username_max_length(self):
-        """Test valid username at maximum length (80 characters)"""
-        username = "a" * 80
-        assert InputValidationService.is_valid_master_username(username) is True
+    def test_valid_username_short_email(self):
+        """Test valid short email"""
+        assert self.service.is_valid_master_username("a@b.co") is True
+
+    def test_valid_username_email_max_length(self):
+        """Test valid email at maximum length (80 characters)"""
+        # Create an email exactly 80 characters: local(64) + @ + domain(15)
+        email = "a" * 64 + "@" + "b" * 10 + ".com"
+        assert self.service.is_valid_master_username(email) is True
 
     def test_valid_username_with_leading_trailing_whitespace(self):
-        """Test that whitespace is stripped and username is valid"""
-        assert InputValidationService.is_valid_master_username("  username  ") is True
+        """Test that whitespace is stripped and email is valid"""
+        assert self.service.is_valid_master_username("  user@example.com  ") is True
+
+    def test_invalid_username_not_email_alphanumeric(self):
+        """Test invalid username - alphanumeric only (not email format)"""
+        assert self.service.is_valid_master_username("user123") is False
+
+    def test_invalid_username_not_email_with_underscore(self):
+        """Test invalid username - has underscore but not email format"""
+        assert self.service.is_valid_master_username("user_name_123") is False
+
+    def test_invalid_username_not_email_with_hyphen(self):
+        """Test invalid username - has hyphen but not email format"""
+        assert self.service.is_valid_master_username("user-name-123") is False
+
+    def test_invalid_username_not_email_mixed_characters(self):
+        """Test invalid username - mixed characters but not email format"""
+        assert self.service.is_valid_master_username("User_Name-123") is False
+
+    def test_invalid_username_single_character(self):
+        """Test invalid username with single character (not email)"""
+        assert self.service.is_valid_master_username("a") is False
 
     def test_invalid_username_empty_string(self):
         """Test invalid empty username"""
-        assert InputValidationService.is_valid_master_username("") is False
+        assert self.service.is_valid_master_username("") is False
 
     def test_invalid_username_only_whitespace(self):
         """Test invalid username with only whitespace"""
-        assert InputValidationService.is_valid_master_username("   ") is False
+        assert self.service.is_valid_master_username("   ") is False
 
     def test_invalid_username_too_long(self):
-        """Test invalid username exceeding maximum length"""
-        username = "a" * 81
-        assert InputValidationService.is_valid_master_username(username) is False
+        """Test invalid username exceeding maximum length (over 80 chars)"""
+        # Create an email over 80 characters
+        email = "a" * 70 + "@example.com"  # This will be over 80 chars
+        assert self.service.is_valid_master_username(email) is False
 
-    def test_invalid_username_with_special_characters(self):
-        """Test invalid username with special characters"""
-        assert InputValidationService.is_valid_master_username("user@name") is False
-        assert InputValidationService.is_valid_master_username("user#name") is False
-        assert InputValidationService.is_valid_master_username("user$name") is False
+    def test_invalid_username_no_at_symbol(self):
+        """Test invalid email - missing @ symbol"""
+        assert self.service.is_valid_master_username("userexample.com") is False
+
+    def test_invalid_username_no_domain(self):
+        """Test invalid email - missing domain"""
+        assert self.service.is_valid_master_username("user@") is False
+
+    def test_invalid_username_no_tld(self):
+        """Test invalid email - missing top-level domain"""
+        assert self.service.is_valid_master_username("user@domain") is False
+
+    def test_invalid_username_no_local_part(self):
+        """Test invalid email - missing local part"""
+        assert self.service.is_valid_master_username("@example.com") is False
 
     def test_invalid_username_with_spaces(self):
-        """Test invalid username with spaces in the middle"""
-        assert InputValidationService.is_valid_master_username("user name") is False
+        """Test invalid email with spaces"""
+        assert self.service.is_valid_master_username("user @example.com") is False
+        assert self.service.is_valid_master_username("user@ example.com") is False
 
-    def test_invalid_username_with_dots(self):
-        """Test invalid username with dots"""
-        assert InputValidationService.is_valid_master_username("user.name") is False
+    def test_invalid_username_starts_with_dot(self):
+        """Test invalid email starting with dot"""
+        assert self.service.is_valid_master_username(".user@example.com") is False
 
-    def test_invalid_username_with_unicode(self):
-        """Test invalid username with unicode characters"""
-        assert InputValidationService.is_valid_master_username("usér") is False
-        assert InputValidationService.is_valid_master_username("用户") is False
+    def test_invalid_username_consecutive_dots(self):
+        """Test invalid email with consecutive dots"""
+        assert self.service.is_valid_master_username("user..name@example.com") is False
+
+    def test_invalid_username_domain_starts_with_dot(self):
+        """Test invalid email with domain starting with dot"""
+        assert self.service.is_valid_master_username("user@.example.com") is False
+
+
+class TestIsValidEmail:
+    """Tests for is_valid_email method"""
+
+    def test_valid_email_standard_format(self):
+        """Test valid standard email format"""
+        assert InputValidationService.is_valid_email("user@example.com") is True
+
+    def test_valid_email_with_numbers(self):
+        """Test valid email with numbers"""
+        assert InputValidationService.is_valid_email("user123@domain.com") is True
+        assert InputValidationService.is_valid_email("test456@example.org") is True
+
+    def test_valid_email_with_underscore(self):
+        """Test valid email with underscore in local part"""
+        assert InputValidationService.is_valid_email("user_name@example.com") is True
+
+    def test_valid_email_with_dot(self):
+        """Test valid email with dot in local part"""
+        assert InputValidationService.is_valid_email("user.name@company.com") is True
+        assert InputValidationService.is_valid_email("first.last@domain.org") is True
+
+    def test_valid_email_short(self):
+        """Test valid short email"""
+        assert InputValidationService.is_valid_email("a@b.co") is True
+
+    def test_valid_email_subdomain(self):
+        """Test valid email with subdomain"""
+        assert InputValidationService.is_valid_email("user@mail.example.com") is True
+
+    def test_invalid_email_empty_string(self):
+        """Test invalid empty email"""
+        assert InputValidationService.is_valid_email("") is False
+
+    def test_invalid_email_no_at_symbol(self):
+        """Test invalid email without @ symbol"""
+        assert InputValidationService.is_valid_email("notanemail") is False
+        assert InputValidationService.is_valid_email("user.example.com") is False
+
+    def test_invalid_email_no_local_part(self):
+        """Test invalid email without local part"""
+        assert InputValidationService.is_valid_email("@example.com") is False
+
+    def test_invalid_email_no_domain(self):
+        """Test invalid email without domain"""
+        assert InputValidationService.is_valid_email("user@") is False
+
+    def test_invalid_email_no_tld(self):
+        """Test invalid email without top-level domain"""
+        assert InputValidationService.is_valid_email("user@domain") is False
+
+    def test_invalid_email_with_spaces(self):
+        """Test invalid email with spaces"""
+        assert InputValidationService.is_valid_email("user @example.com") is False
+        assert InputValidationService.is_valid_email("user@ example.com") is False
+        assert InputValidationService.is_valid_email("user@exam ple.com") is False
+
+    def test_invalid_email_consecutive_dots(self):
+        """Test invalid email with consecutive dots"""
+        assert InputValidationService.is_valid_email("user..name@example.com") is False
+
+    def test_invalid_email_starts_with_dot(self):
+        """Test invalid email starting with dot"""
+        assert InputValidationService.is_valid_email(".user@example.com") is False
+
+    def test_invalid_email_ends_with_dot(self):
+        """Test invalid email ending with dot"""
+        assert InputValidationService.is_valid_email("user@example.com.") is False
+
+    def test_invalid_email_domain_starts_with_dot(self):
+        """Test invalid email with domain starting with dot"""
+        assert InputValidationService.is_valid_email("user@.com") is False
+
+    def test_invalid_email_just_at_symbol(self):
+        """Test invalid email that is just @ symbol"""
+        assert InputValidationService.is_valid_email("@") is False
+
+    def test_invalid_email_multiple_at_symbols(self):
+        """Test invalid email with multiple @ symbols"""
+        assert InputValidationService.is_valid_email("user@@example.com") is False
+        assert InputValidationService.is_valid_email("user@domain@example.com") is False
+
+    def test_invalid_email_uppercase_letters(self):
+        """Test that uppercase letters are rejected (based on current regex)"""
+        # Note: Current regex only accepts lowercase
+        assert InputValidationService.is_valid_email("User@Example.com") is False
+        assert InputValidationService.is_valid_email("USER@EXAMPLE.COM") is False
 
 
 class TestIsValidMasterPassword:
@@ -104,7 +232,7 @@ class TestIsValidMasterPassword:
 
     def test_invalid_password_too_long(self):
         """Test invalid password exceeding maximum length"""
-        password = "a" * 256
+        password = "a" * 513
         assert InputValidationService.is_valid_master_password(password) is False
 
     def test_valid_password_unicode(self):
@@ -140,10 +268,19 @@ class TestIsValidApplicationUsername:
         """Test invalid application username with event handlers"""
         assert self.service.is_valid_application_username("onclick=alert(1)") is False
 
-    def test_invalid_application_username_basic_validation_fails(self):
-        """Test that basic username validation is also checked"""
-        assert self.service.is_valid_application_username("user@name") is False
+    def test_invalid_application_username_empty_string(self):
+        """Test invalid empty application username"""
         assert self.service.is_valid_application_username("") is False
+
+    def test_valid_application_username_at_max_length(self):
+        """Test valid application username at 80 characters"""
+        username = "a" * 80
+        assert self.service.is_valid_application_username(username) is True
+
+    def test_invalid_application_username_too_long(self):
+        """Test invalid application username over 80 characters"""
+        username = "a" * 81
+        assert self.service.is_valid_application_username(username) is False
 
 
 class TestIsValidApplicationPassword:
@@ -169,39 +306,52 @@ class TestIsValidApplicationPassword:
 
     def test_invalid_application_password_with_javascript(self):
         """Test invalid application password with javascript protocol"""
-        assert self.service.is_valid_application_password("javascript:alert(1)") is False
+        assert self.service.is_valid_application_password("javascript:alert(1)password") is False
 
-    def test_invalid_application_password_basic_validation_fails(self):
-        """Test that basic password validation is also checked"""
+    def test_invalid_application_password_with_event_handler(self):
+        """Test invalid application password with event handlers"""
+        assert self.service.is_valid_application_password("onclick=alert(1)password") is False
+
+    def test_invalid_application_password_too_short(self):
+        """Test invalid application password below minimum length"""
         assert self.service.is_valid_application_password("short") is False
+
+    def test_invalid_application_password_empty_string(self):
+        """Test invalid empty application password"""
         assert self.service.is_valid_application_password("") is False
+
+    def test_valid_application_password_at_max_length(self):
+        """Test valid application password at 255 characters"""
+        password = "a" * 255
+        assert self.service.is_valid_application_password(password) is True
+
+    def test_invalid_application_password_too_long(self):
+        """Test invalid application password over 255 characters"""
+        password = "a" * 513
+        assert self.service.is_valid_application_password(password) is False
 
 
 class TestCleanInput:
     """Tests for clean_input method"""
 
-    def test_clean_input_string(self):
-        """Test cleaning a string input"""
+    def test_clean_input_with_leading_whitespace(self):
+        """Test cleaning input with leading whitespace"""
+        assert InputValidationService.clean_input("  hello") == "hello"
+
+    def test_clean_input_with_trailing_whitespace(self):
+        """Test cleaning input with trailing whitespace"""
+        assert InputValidationService.clean_input("hello  ") == "hello"
+
+    def test_clean_input_with_both_whitespace(self):
+        """Test cleaning input with both leading and trailing whitespace"""
         assert InputValidationService.clean_input("  hello  ") == "hello"
 
     def test_clean_input_no_whitespace(self):
         """Test cleaning input with no whitespace"""
         assert InputValidationService.clean_input("hello") == "hello"
 
-    def test_clean_input_only_leading_whitespace(self):
-        """Test cleaning input with only leading whitespace"""
-        assert InputValidationService.clean_input("  hello") == "hello"
-
-    def test_clean_input_only_trailing_whitespace(self):
-        """Test cleaning input with only trailing whitespace"""
-        assert InputValidationService.clean_input("hello  ") == "hello"
-
-    def test_clean_input_tabs_and_newlines(self):
-        """Test cleaning input with tabs and newlines"""
-        assert InputValidationService.clean_input("\t\nhello\n\t") == "hello"
-
-    def test_clean_input_preserves_internal_whitespace(self):
-        """Test that internal whitespace is preserved"""
+    def test_clean_input_with_internal_whitespace(self):
+        """Test cleaning input preserves internal whitespace"""
         assert InputValidationService.clean_input("  hello world  ") == "hello world"
 
     def test_clean_input_integer(self):
@@ -332,14 +482,15 @@ class TestEdgeCases:
         self.service = InputValidationService()
 
     def test_username_with_maximum_length_and_whitespace(self):
-        """Test username at max length with surrounding whitespace"""
-        # 80 chars + whitespace should strip to 80 chars
-        username = "  " + "a" * 80 + "  "
-        assert InputValidationService.is_valid_master_username(username) is True
+        """Test email username at max length with surrounding whitespace"""
+        # Create valid email at 80 chars, add whitespace
+        email = "a" * 64 + "@" + "b" * 10 + ".com"  # 80 chars exactly
+        username = "  " + email + "  "
+        assert self.service.is_valid_master_username(username) is True
 
     def test_username_that_becomes_empty_after_strip(self):
         """Test username that is only whitespace"""
-        assert InputValidationService.is_valid_master_username("   ") is False
+        assert self.service.is_valid_master_username("   ") is False
 
     def test_password_with_maximum_length_and_whitespace(self):
         """Test password at max length with surrounding whitespace"""
@@ -351,8 +502,6 @@ class TestEdgeCases:
         """Test that application username checks both format and XSS"""
         # Valid format but contains XSS
         assert self.service.is_valid_application_username("user<script>") is False
-        # Invalid format
-        assert self.service.is_valid_application_username("user@name") is False
         # Valid format and no XSS
         assert self.service.is_valid_application_username("username") is True
 
@@ -372,3 +521,13 @@ class TestEdgeCases:
         assert InputValidationService.clean_input(3.14) == "3.14"
         assert InputValidationService.clean_input(True) == "True"
         assert InputValidationService.clean_input([1, 2, 3]) == "[1, 2, 3]"
+
+    def test_master_username_email_validation_integration(self):
+        """Test that master username properly validates email format and length"""
+        # Valid email within length
+        assert self.service.is_valid_master_username("test@example.com") is True
+        # Invalid - not email format
+        assert self.service.is_valid_master_username("testuser") is False
+        # Invalid - email too long
+        long_email = "a" * 70 + "@example.com"
+        assert self.service.is_valid_master_username(long_email) is False

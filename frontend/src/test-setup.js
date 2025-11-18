@@ -1,4 +1,68 @@
 import "@testing-library/jest-dom";
+import webcrypto from "crypto";
+import { Buffer } from "buffer";
+
+// Crypto implementation with proper ArrayBuffer handling
+Object.defineProperty(globalThis, "crypto", {
+  value: webcrypto,
+  configurable: true,
+});
+
+// Polyfill for ArrayBuffer to Buffer conversion in crypto operations
+const originalImportKey = webcrypto.subtle.importKey.bind(webcrypto.subtle);
+const originalDeriveKey = webcrypto.subtle.deriveKey.bind(webcrypto.subtle);
+const originalDecrypt = webcrypto.subtle.decrypt.bind(webcrypto.subtle);
+
+webcrypto.subtle.importKey = async function (
+  format,
+  keyData,
+  algorithm,
+  extractable,
+  keyUsages
+) {
+  // Convert ArrayBuffer to Buffer if needed
+  if (keyData instanceof ArrayBuffer) {
+    keyData = Buffer.from(keyData);
+  }
+  return originalImportKey(format, keyData, algorithm, extractable, keyUsages);
+};
+
+webcrypto.subtle.deriveKey = async function (
+  algorithm,
+  baseKey,
+  derivedKeyAlgorithm,
+  extractable,
+  keyUsages
+) {
+  // Convert salt from ArrayBuffer to Buffer if needed
+  if (algorithm && algorithm.salt && algorithm.salt instanceof ArrayBuffer) {
+    algorithm = {
+      ...algorithm,
+      salt: Buffer.from(algorithm.salt),
+    };
+  }
+  return originalDeriveKey(
+    algorithm,
+    baseKey,
+    derivedKeyAlgorithm,
+    extractable,
+    keyUsages
+  );
+};
+
+webcrypto.subtle.decrypt = async function (algorithm, key, data) {
+  // Convert data and iv from ArrayBuffer to Buffer if needed
+  if (data instanceof ArrayBuffer) {
+    data = Buffer.from(data);
+  }
+  if (algorithm && algorithm.iv && algorithm.iv instanceof ArrayBuffer) {
+    algorithm = {
+      ...algorithm,
+      iv: Buffer.from(algorithm.iv),
+    };
+  }
+  return originalDecrypt(algorithm, key, data);
+};
 
 // Mock global.fetch for all tests
 global.fetch = jest.fn();

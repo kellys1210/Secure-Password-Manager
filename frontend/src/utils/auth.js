@@ -1,6 +1,7 @@
 // custom vite enviorment variable for api communication from backend to frontend
 // https://vueschool.io/articles/vuejs-tutorials/how-to-use-environment-variables-in-vite-js/
-export const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+import { getEnvVar } from "./env.js";
+export const API_BASE = getEnvVar("VITE_API_URL", "http://localhost:8080");
 const toAPI = (u) => (u.startsWith("http") ? u: `${API_BASE}${u}`);
 export const apiFetch = (u, opts = {}) => fetch(toAPI(u), opts);
 
