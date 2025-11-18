@@ -5,7 +5,6 @@ import { useState } from "react";
 import { validate as validateEmail } from "email-validator";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/auth.js";
-import { cryptoUtils } from "../utils/crypto.js"; 
 
 export default function RegisterForm() {
   const [email, setEmail] = useState("");
@@ -45,9 +44,6 @@ export default function RegisterForm() {
 
     setSubmitting(true);
 
-    // Generate random salt for storage. 
-    const saltBase64 = cryptoUtils.generateSaltAsBase64();
-
     try {
       // Make API call to register endpoint
       const response = await apiFetch("/users/register", {
@@ -57,8 +53,7 @@ export default function RegisterForm() {
         },
         body: JSON.stringify({
           username: email.trim(),
-          password: password,
-          salt: saltBase64,
+          password: password
         }),
       });
 
@@ -97,10 +92,14 @@ export default function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      {message && <p>{message}</p>}
+    <form onSubmit={handleSubmit}
+    className="max-w-sm mx-auto mt-6 p-6 bg-white border border-gray-200 shadow-md rounded-xl">
+      {message && <p className="mb-4 text-red-600 text-sm font-medium text-center">
+        {message}</p>}
 
-      <label htmlFor="email">Email:</label>
+      <label htmlFor="email"
+      className="block text-brandnavy font-semibold mb-1">
+        Email:</label>
       <br />
       <input
         id="email"
@@ -108,11 +107,15 @@ export default function RegisterForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
+        className="w-full p-2 mb-4 border border-gray-300 rounded-lg 
+        focus:outline-none focus:ring-2 focus:ring-brandnavy"
       />
       <br />
       <br />
 
-      <label htmlFor="password">Password:</label>
+      <label htmlFor="password"
+      className="block text-brandnavy font-semibold mb-1">
+        Password:</label>
       <br />
       <input
         id="password"
@@ -121,11 +124,15 @@ export default function RegisterForm() {
         onChange={(e) => setPassword(e.target.value)}
         required
         minLength={8}
+        className="w-full p-2 mb-4 border border-gray-300 rounded-lg 
+        focus:outline-none focus:ring-2 focus:ring-brandnavy"
       />
       <br />
       <br />
 
-      <label htmlFor="confirm">Confirm Password:</label>
+      <label htmlFor="confirm"
+      className="block text-brandnavy font-semibold mb-1">
+        Confirm Password:</label>
       <br />
       <input
         id="confirm"
@@ -133,11 +140,15 @@ export default function RegisterForm() {
         value={confirm}
         onChange={(e) => setConfirm(e.target.value)}
         required
+        className="w-full p-2 mb-6 border border-gray-300 rounded-lg 
+        focus:outline-none focus:ring-2 focus:ring-brandnavy"
       />
       <br />
       <br />
 
-      <button type="submit" disabled={submitting}>
+      <button type="submit" disabled={submitting}
+      className="w-full bg-brandnavy text-white py-2 rounded-lg font-semibold
+      hover:bg-opacity-90 transition disabled:opacity-60">
         {submitting ? "Creating account..." : "Register"}
       </button>
     </form>

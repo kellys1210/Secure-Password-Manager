@@ -3,11 +3,8 @@
 import React from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux"
 import { validate as validateEmail } from "email-validator";
-import { apiFetch, removeToken, logout } from "../utils/auth.js";
-import { cryptoUtils } from "../utils/crypto.js";
-import { setSecretKey, clearSecretKey } from "../store/keySlice.js";
+import { apiFetch, logout } from "../utils/auth.js";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -15,7 +12,7 @@ export default function LoginForm() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+
 
   // Navigate to registration page
   const registerButton = () => {
@@ -71,22 +68,8 @@ export default function LoginForm() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem("login_username", emailNorm);
-
-        //ensure Salt is returned from backend 
-        if (!data.salt) {
-          setMessage("Session invalid - please log in again.");
-          logout(navigate);
-          return;
-        }
+        localStorage.setItem("login_username", emailNorm);         
         
-        // Decode salt from backend and derive AES Key
-        const saltBuffer = cryptoUtils.base64toArrayBuffer(data.salt)               
-        const secretKey = await cryptoUtils.deriveSecretKey(password, saltBuffer);
-
-        // store the key in redux
-        dispatch(setSecretKey(secretKey));
-
         // Navigate to verify page
         navigate("/verify_mfa");
       } else {
@@ -94,14 +77,14 @@ export default function LoginForm() {
         if (response.status === 401) {
           setMessage("Invalid credentials.");
         } else if (response.status === 400) {
-          setMessage(data.error || "Bad request. Please check your input."); // refactor this
+          setMessage(data.error || "Bad request. Please check your input.");
         } else {
           setMessage(data.error || "login failed.");
         }
       }
     } catch (error) {
       console.error("Login error:", error);
-      setMessage("Network error. Please check your connection and try again.");
+      setMessage("Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -109,9 +92,7 @@ export default function LoginForm() {
 
   const handleLogout = () => {
     // Clear JWT token using utility function
-    removeToken();
-    // Clear the redux secret key
-    dispatch(clearSecretKey());
+    logout(null);
     setMessage("You have been logged out.");
     // Reset form fields
     setEmail("");
@@ -119,10 +100,13 @@ export default function LoginForm() {
   };
 
   return (
-    <form onSubmit={submit}>
-      {message && <p>{message}</p>}
+    <form onSubmit={submit} 
+    className="max-w-sm mx-auto mt-10 p-6 bg-white border border-gray-200 shadow-md rounded-xl">
+      {message && <p className="mb-4 text-red-600 text-sm font-medium">
+        {message}</p>}
 
-      <label htmlFor="email">Email</label>
+      <label htmlFor="email"  className="block text-brandnavy font-semibold mb-1">
+        Email</label>
       <br />
       <input
         id="email"
@@ -130,11 +114,13 @@ export default function LoginForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
+        className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brandnavy"
       />
       <br />
       <br />
 
-      <label htmlFor="password">Password</label>
+      <label htmlFor="password" className="block text-brandnavy font-semibold mb-1">
+        Password</label>
       <br />
       <input
         id="password"
@@ -143,24 +129,26 @@ export default function LoginForm() {
         onChange={(e) => setPassword(e.target.value)}
         required
         minLength={8}
+        className="w-full p-2 mb-6 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brandnavy"
       />
       <br />
       <br />
 
-      <button type="submit" disabled={submitting}>
+      <button type="submit" disabled={submitting}
+      className="w-full bg-brandnavy text-white py-2 rounded-lg font-semibold hover:bg-opacity-90 disabled:opacity-60">
         {submitting ? "Signing in..." : "Sign in"}
       </button>
 
-      <button type="button" onClick={registerButton}>
+      <button type="button" onClick={registerButton}
+      className="w-full mt-3 py-2 border border-brandnavy text-brandnavy rounded-lg font-semibold hover:bg-brandnavy hover:text-white transition">
         Register
       </button>
 
-      {/* Logout button - only show if there's a token */}
       {localStorage.getItem("jwtToken") && (
         <button
           type="button"
           onClick={handleLogout}
-          style={{ marginLeft: "10px" }}
+          className="w-full mt-3 py-2 text-red-700 font-semibold hover:text-red-900"
         >
           Logout
         </button>
