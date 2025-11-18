@@ -1,10 +1,26 @@
 // custom vite enviorment variable for api communication from backend to frontend
 // https://vueschool.io/articles/vuejs-tutorials/how-to-use-environment-variables-in-vite-js/
 import { getEnvVar } from "./env.js";
-export const API_BASE = getEnvVar("VITE_API_URL", "http://localhost:8080");
-const toAPI = (u) => (u.startsWith("http") ? u: `${API_BASE}${u}`);
-export const apiFetch = (u, opts = {}) => fetch(toAPI(u), opts);
 
+// Use /api/ proxy path for deployed versions, localhost:8080 for local development
+const isNetlifyDeployed =
+  typeof window !== "undefined" &&
+  window.location.hostname.includes("netlify.app");
+export const API_BASE = isNetlifyDeployed
+  ? "/api"
+  : getEnvVar("VITE_API_URL", "http://localhost:8080");
+
+const toAPI = (u) => {
+  // For Netlify deployed versions, use proxy path
+  if (isNetlifyDeployed) {
+    // If URL already starts with /api/, don't add it again
+    return u.startsWith("/api/") ? u : `/api${u}`;
+  }
+  // For local development, use VITE_API_URL
+  return u.startsWith("http") ? u : `${API_BASE}${u}`;
+};
+
+export const apiFetch = (u, opts = {}) => fetch(toAPI(u), opts);
 
 // Utility functions for authentication and JWT token management
 
@@ -94,11 +110,11 @@ export const logout = (navigate = null) => {
 
 /**
  * Initiate the TOTP setup for user. Send a POST request to the backend to create a TOTP secret
- * and return a QR code for scanning by an authenticator app. 
- * 
+ * and return a QR code for scanning by an authenticator app.
+ *
  * @param {string} username - The username to set up MFA
  *  @returns {Promise} The QR code
- * 
+ *
  */
 export const totpSetup = async (username) => {
   const response = await apiFetch("/totp/setup", {
@@ -107,7 +123,7 @@ export const totpSetup = async (username) => {
     body: JSON.stringify({ username }),
   });
 
-  if (response.ok){
+  if (response.ok) {
     const qrBlob = await response.blob();
     // Render the qr code
     return { success: true, qrBlob };
@@ -115,19 +131,19 @@ export const totpSetup = async (username) => {
     const errorText = await response.text();
     return {
       success: false,
-      error: errorText || "Failed to start TOTP setup"
+      error: errorText || "Failed to start TOTP setup",
     };
   }
 };
 
 /**
- * Verify the TOTP code during the MFA setup or login. Send  POST request to the backend to 
- * validate the entered code with the user's db secret. 
- * 
+ * Verify the TOTP code during the MFA setup or login. Send  POST request to the backend to
+ * validate the entered code with the user's db secret.
+ *
  * @param {string} username - The user's username
  * @param {string} code - TOTP code from authenticator
  * @returns {Promise} - successful setup/login
- * 
+ *
  */
 export const verifyTotp = async (username, code) => {
   const response = await apiFetch("/totp/verify", {
@@ -141,12 +157,12 @@ export const verifyTotp = async (username, code) => {
   if (response.ok) {
     return {
       success: true,
-      data, 
+      data,
     };
   } else {
     return {
-      success: false, 
-      error: data.error || "TOTP verification failed", 
+      success: false,
+      error: data.error || "TOTP verification failed",
     };
   }
 };

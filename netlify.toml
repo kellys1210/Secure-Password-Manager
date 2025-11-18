@@ -1,0 +1,41 @@
+[build]
+  publish = "dist"
+  command = "npm install && npm run build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_VERSION = "10"
+
+# Redirect all requests to index.html for SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# API proxy for backend communication
+[[redirects]]
+  from = "/api/*"
+  to = "https://password-manager-backend-ts4ajixepa-uw.a.run.app/:splat"
+  status = 200
+  force = true
+
+# Headers for security and CORS
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[context.production]
+  environment = { VITE_API_URL = "https://password-manager-backend-ts4ajixepa-uw.a.run.app" }
+
+[context.deploy-preview]
+  environment = { VITE_API_URL = "https://password-manager-backend-ts4ajixepa-uw.a.run.app" }
