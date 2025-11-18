@@ -67,6 +67,15 @@ class TotpService:
         """
         logger = logging.getLogger(__name__)
 
+        # Add type checking and conversion
+        if not isinstance(secret, str):
+            logger.error(f"Secret is not a string: {type(secret)}")
+            secret = str(secret) if secret is not None else ""
+
+        if not isinstance(user_code, str):
+            logger.error(f"User code is not a string: {type(user_code)}")
+            user_code = str(user_code) if user_code is not None else ""
+
         if not secret or not user_code:
             raise ValueError(
                 "Secret or User Code not provided when trying to verify TOTP code."
@@ -75,18 +84,25 @@ class TotpService:
         logger.info(
             f"Verifying TOTP code - Secret length: {len(secret)}, Code: {user_code}"
         )
+        logger.info(f"Secret type: {type(secret)}, Code type: {type(user_code)}")
 
-        totp = pyotp.TOTP(secret)
-        import time
+        try:
+            totp = pyotp.TOTP(secret)
+            import time
 
-        current_time = int(time.time())
-        logger.info(f"Current timestamp: {current_time}")
-        logger.info(f"Current valid code: {totp.now()}")
+            current_time = int(time.time())
+            logger.info(f"Current timestamp: {current_time}")
+            logger.info(f"Current valid code: {totp.now()}")
 
-        is_valid = totp.verify(user_code)
-        logger.info(f"TOTP verification result: {is_valid}")
+            is_valid = totp.verify(user_code)
+            logger.info(f"TOTP verification result: {is_valid}")
 
-        return is_valid  # Default 30 second validity
+            return is_valid  # Default 30 second validity
+        except Exception as e:
+            logger.error(f"Error during TOTP verification: {str(e)}")
+            logger.error(f"Secret at time of error: {secret}")
+            logger.error(f"User code at time of error: {user_code}")
+            raise
 
     @staticmethod
     def _get_totp_uri(secret: str, username: str, issuer: str) -> str:

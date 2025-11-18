@@ -121,8 +121,17 @@ def verify_totp():
 
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({"error": "Expected a JSON object"}), 400
+
         username = data.get("username")
         user_code = data.get("code")
+
+        # Ensure username and code are strings
+        if username is not None and not isinstance(username, str):
+            username = str(username)
+        if user_code is not None and not isinstance(user_code, str):
+            user_code = str(user_code)
 
         logger.info(f"TOTP verify request - Username: {username}, Code: {user_code}")
 
@@ -141,10 +150,18 @@ def verify_totp():
             logger.warning(f"TOTP not set up for user: {username}")
             return jsonify({"error": "TOTP not set up for this user"}), 404
 
-        logger.info(f"Found secret for user {username}, length: {len(secret)}")
+        # Ensure secret is a string
+        if secret is not None and not isinstance(secret, str):
+            logger.warning(f"Secret is not a string: {type(secret)}, converting...")
+            secret = str(secret)
+
+        if not secret:
+            logger.error("Secret is empty after conversion")
+            return jsonify({"error": "Invalid TOTP secret"}), 500
 
         # Verify TOTP Code, return JWT session token if successful
-        if totp.verify_totp_code(secret, user_code):
+        verification_result = totp.verify_totp_code(secret, user_code)
+        if verification_result:
             logger.info(f"TOTP verification successful for user: {username}")
             return (
                 jsonify(
@@ -157,18 +174,6 @@ def verify_totp():
             )
         else:
             logger.warning(f"TOTP verification failed for user: {username}")
-            # Log current server time and valid codes for debugging
-            current_time = time.time()
-            totp_for_debug = pyotp.TOTP(secret)
-            logger.info(f"Server time: {current_time}")
-            logger.info(f"Current valid code: {totp_for_debug.now()}")
-            logger.info(
-                f"Previous window code: {totp_for_debug.at(for_time=current_time - 30)}"
-            )
-            logger.info(
-                f"Next window code: {totp_for_debug.at(for_time=current_time + 30)}"
-            )
-
             return jsonify({"error": "Invalid TOTP code"}), 401
 
     except Exception as e:
