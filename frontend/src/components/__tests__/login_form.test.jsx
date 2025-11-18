@@ -3,6 +3,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BrowserRouter as Router } from "react-router-dom";
 import LoginForm from "../login_form.jsx";
+import { cryptoUtils } from "../../utils/crypto.js";
+import { Provider } from "react-redux";
+import { store } from "../../store/appStore.js";
 
 describe("LoginForm", () => {
   beforeEach(() => {
@@ -10,12 +13,17 @@ describe("LoginForm", () => {
     global.fetch.mockClear();
   });
 
-  it("renders login form with email and password fields", () => {
-    render(
-      <Router>
-        <LoginForm />
-      </Router>
+  // helper to render a component with Redux and React Router context
+  const renderWithProviders = (ui) => {
+    return render(
+      <Provider store={store}>
+        <Router>{ui}</Router>
+      </Provider>
     );
+  };
+
+  it("renders login form with email and password fields", () => {
+    renderWithProviders(<LoginForm />);
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
@@ -26,11 +34,7 @@ describe("LoginForm", () => {
 
   it("allows user to type in email and password fields", async () => {
     const user = userEvent.setup();
-    render(
-      <Router>
-        <LoginForm />
-      </Router>
-    );
+    renderWithProviders(<LoginForm />);
 
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
@@ -49,11 +53,7 @@ describe("LoginForm", () => {
       json: async () => ({ token: "fake-jwt-token" }),
     });
 
-    render(
-      <Router>
-        <LoginForm />
-      </Router>
-    );
+    renderWithProviders(<LoginForm />);
 
     await user.type(screen.getByLabelText(/email/i), "test@example.com");
     await user.type(screen.getByLabelText(/password/i), "password123");
@@ -84,11 +84,7 @@ describe("LoginForm", () => {
       json: async () => ({ error: "Invalid credentials" }),
     });
 
-    render(
-      <Router>
-        <LoginForm />
-      </Router>
-    );
+    renderWithProviders(<LoginForm />);
 
     await user.type(screen.getByLabelText(/email/i), "wrong@example.com");
     await user.type(screen.getByLabelText(/password/i), "wrongpassword");
@@ -101,11 +97,8 @@ describe("LoginForm", () => {
 
   it("validates email format before submission", async () => {
     const user = userEvent.setup();
-    render(
-      <Router>
-        <LoginForm />
-      </Router>
-    );
+
+    renderWithProviders(<LoginForm />);
 
     // Test with invalid email using reliable form submission
     const emailInput = screen.getByLabelText(/email/i);
@@ -131,5 +124,37 @@ describe("LoginForm", () => {
 
     // Verify that no API call was made due to invalid email
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+});
+
+// Webcrypto testing.
+describe("LoginForm WebCrypto", () => {
+  // Verify same password, salt pairs generate identical keys,
+  test("derives AES-GCM key from password and salt deterministically", async () => {
+    const password = "password123!";
+    const salt = cryptoUtils.generateSalt();
+
+    const key1 = await cryptoUtils.deriveSecretKey(password, salt);
+    const key2 = await cryptoUtils.deriveSecretKey(password, salt);
+
+    const raw1 = await cryptoUtils.exportKey(key1);
+    const raw2 = await cryptoUtils.exportKey(key2);
+
+    expect(new Uint8Array(raw1)).toEqual(new Uint8Array(raw2));
+  });
+
+  // different salts produce distinct keys.
+  test("derived keys differs with different salts", async () => {
+    const password = "password123!";
+    const salt1 = cryptoUtils.generateSalt();
+    const salt2 = cryptoUtils.generateSalt();
+
+    const key1 = await cryptoUtils.deriveSecretKey(password, salt1);
+    const key2 = await cryptoUtils.deriveSecretKey(password, salt2);
+
+    const raw1 = await cryptoUtils.exportKey(key1);
+    const raw2 = await cryptoUtils.exportKey(key2);
+
+    expect(new Uint8Array(raw1)).not.toEqual(new Uint8Array(raw2));
   });
 });

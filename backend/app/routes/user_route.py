@@ -43,6 +43,7 @@ def register_user():
         data = request.get_json()
         username = data.get("username")
         password = data.get("password")
+        encryption_salt = data.get("salt")
 
         if not username or not password:
             return jsonify({"error": "Username and password are required"}), 400
@@ -55,14 +56,20 @@ def register_user():
             return jsonify({"error": "Username already exists"}), 409
 
         # Check if username and password are valid
-        if not ivs.is_valid_master_username(new_username) or not ivs.is_valid_master_password(new_password):
+        if not ivs.is_valid_master_username(
+            new_username
+        ) or not ivs.is_valid_master_password(new_password):
             return jsonify({"error": "Username or password are invalid"}), 400
 
         # Create master password hash
         new_password_hash = argon2.hash_password(new_password)
 
         # Create new User object
-        new_user = User(username=new_username, password=new_password_hash)
+        new_user = User(
+            username=new_username,
+            password=new_password_hash,
+            encryption_salt=encryption_salt,
+        )
 
         # Add and save user to PostgreSQL
         db.session.add(new_user)
@@ -121,7 +128,16 @@ def login():
             user.password = argon2.hash_password(password)
             db.session.commit()
 
-        return jsonify({"message": "Login successful", "user_id": user.id}), 200
+        return (
+            jsonify(
+                {
+                    "message": "Login successful",
+                    "user_id": user.id,
+                    "salt": user.encryption_salt,
+                }
+            ),
+            200,
+        )
     except Exception as e:
         return jsonify({"error": "Invalid request format"}), 400
 

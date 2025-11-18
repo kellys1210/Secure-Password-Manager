@@ -89,7 +89,7 @@ class TestAuthCrossEnvironment:
         """Test /register endpoint behaves consistently across environments"""
         # Test successful registration
         user_data = {
-            "username": "testuser_env",
+            "username": "testuser_env@example.com",
             "password": "SecurePassword123!",
         }
 
@@ -126,19 +126,44 @@ class TestAuthCrossEnvironment:
         """Test /login endpoint behaves consistently across environments"""
         # First register a user
         user_data = {
-            "username": "login_test_user",
+            "username": "login_test_user@example.com",
             "password": "TestPassword123!",
         }
 
-        client.post(
+        reg_response = client.post(
             "/users/register",
             data=json.dumps(user_data),
             content_type="application/json",
         )
 
+        # If registration failed, check if user already exists from previous test
+        if reg_response.status_code == 400:
+            # Try to delete existing user and retry
+            from backend.app.model import User
+            from backend.app import db
+
+            with client.application.app_context():
+                existing_user = User.query.filter_by(
+                    username="login_test_user@example.com"
+                ).first()
+                if existing_user:
+                    db.session.delete(existing_user)
+                    db.session.commit()
+
+            # Retry registration
+            reg_response = client.post(
+                "/users/register",
+                data=json.dumps(user_data),
+                content_type="application/json",
+            )
+
+        assert (
+            reg_response.status_code == 201
+        ), f"Registration failed: {json.loads(reg_response.data)}"
+
         # Test successful login
         login_data = {
-            "username": "login_test_user",
+            "username": "login_test_user@example.com",
             "password": "TestPassword123!",
         }
 
@@ -178,7 +203,7 @@ class TestAuthCrossEnvironment:
         """Test password hashing works consistently across environments"""
         # Register user
         user_data = {
-            "username": "hash_test_user",
+            "username": "hash_test_user@example.com",
             "password": "ConsistentPassword123!",
         }
 
@@ -188,11 +213,34 @@ class TestAuthCrossEnvironment:
             content_type="application/json",
         )
 
-        assert response.status_code == 201
+        # If registration failed, check if user already exists from previous test
+        if response.status_code == 400:
+            # Try to delete existing user and retry
+            from backend.app.model import User
+            from backend.app import db
+
+            with client.application.app_context():
+                existing_user = User.query.filter_by(
+                    username="hash_test_user@example.com"
+                ).first()
+                if existing_user:
+                    db.session.delete(existing_user)
+                    db.session.commit()
+
+            # Retry registration
+            response = client.post(
+                "/users/register",
+                data=json.dumps(user_data),
+                content_type="application/json",
+            )
+
+        assert (
+            response.status_code == 201
+        ), f"Registration failed: {json.loads(response.data)}"
 
         # Login with same password
         login_data = {
-            "username": "hash_test_user",
+            "username": "hash_test_user@example.com",
             "password": "ConsistentPassword123!",
         }
 
@@ -226,7 +274,7 @@ class TestAuthCrossEnvironment:
         """Test JSON content type handling is consistent across environments"""
         # Test with proper content type
         user_data = {
-            "username": "content_type_test",
+            "username": "content_type_test@example.com",
             "password": "TestPassword123!",
         }
 
@@ -236,7 +284,30 @@ class TestAuthCrossEnvironment:
             content_type="application/json",
         )
 
-        assert response.status_code == 201
+        # If registration failed, check if user already exists from previous test
+        if response.status_code == 400:
+            # Try to delete existing user and retry
+            from backend.app.model import User
+            from backend.app import db
+
+            with client.application.app_context():
+                existing_user = User.query.filter_by(
+                    username="content_type_test@example.com"
+                ).first()
+                if existing_user:
+                    db.session.delete(existing_user)
+                    db.session.commit()
+
+            # Retry registration
+            response = client.post(
+                "/users/register",
+                data=json.dumps(user_data),
+                content_type="application/json",
+            )
+
+        assert (
+            response.status_code == 201
+        ), f"Registration failed: {json.loads(response.data)}"
 
         # Test with invalid JSON
         response = client.post(
@@ -362,7 +433,7 @@ class TestIntegrationCrossEnvironment:
         """Test complete registration and login workflow"""
         # 1. Register new user
         register_data = {
-            "username": "integration_test_user",
+            "username": "integration_test_user@example.com",
             "password": "IntegrationTestPassword123!",
         }
 
@@ -378,7 +449,7 @@ class TestIntegrationCrossEnvironment:
 
         # 2. Login with registered user
         login_data = {
-            "username": "integration_test_user",
+            "username": "integration_test_user@example.com",
             "password": "IntegrationTestPassword123!",
         }
 
@@ -398,7 +469,9 @@ class TestIntegrationCrossEnvironment:
         from backend.app.model.user_model import User
 
         with client.application.app_context():
-            user = User.query.filter_by(username="integration_test_user").first()
+            user = User.query.filter_by(
+                username="integration_test_user@example.com"
+            ).first()
             assert user is not None
             assert user.id == register_data["user_id"]
 
@@ -406,7 +479,7 @@ class TestIntegrationCrossEnvironment:
         """Test that duplicate registrations are properly prevented"""
         # Register user first time
         user_data = {
-            "username": "duplicate_test_user",
+            "username": "duplicate_test_user@example.com",
             "password": "TestPassword123!",
         }
 
