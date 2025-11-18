@@ -2,9 +2,13 @@ import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BrowserRouter as Router} from "react-router-dom";
+import { Provider } from "react-redux";
+import { store } from "../../store/appStore.js"
 import VaultSetup from "../vault_setup";
 import { createOrUpdatePassword, deletePassword, getAllPasswords } from "../../utils/vault";
 import { isAuthenticated, logout } from "../../utils/auth";
+import { cryptoUtils } from "../../utils/crypto.js";
+import { setSecretKey } from "../../store/keySlice.js";
 
 // Mock the API calls for db
 jest.mock("../../utils/vault", () => ({
@@ -19,6 +23,23 @@ jest.mock("../../utils/auth", () => ({
     logout: jest.fn(),
 }));
 
+// helper for to render a component with Redux and React Router context
+const renderWithProviders = (ui) => {
+    return render(
+      <Provider store={store}>
+        <Router>{ui}</Router>
+      </Provider>
+    );
+};
+
+// Mock symmetric key for VaultSetup encryption calls.
+beforeAll(async () => {
+    const salt = cryptoUtils.generateSalt();
+    const tempKey = await cryptoUtils.deriveSecretKey("testpassword", salt);
+    store.dispatch(setSecretKey(tempKey));
+  });
+
+
 describe("VaultSetup", () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -30,11 +51,7 @@ describe("VaultSetup", () => {
 
     // The form field renders correctly 
     it("renders from application, username, password fields and submit button", async () => {
-        render(
-            <Router>
-                <VaultSetup />
-            </Router>
-        );
+        renderWithProviders(<VaultSetup />);
 
         await waitFor(() => {
         expect(screen.getByLabelText(/application/i)).toBeInTheDocument();
@@ -47,11 +64,7 @@ describe("VaultSetup", () => {
     // Type into input fields
     it("allows typing into the fields", async () => {
         const user = userEvent.setup();
-        render(
-            <Router>
-                <VaultSetup />
-            </Router>
-        );
+        renderWithProviders(<VaultSetup />);
 
         const appInput = screen.getByLabelText(/application/i);
         const usernameInput = screen.getByLabelText(/username/i);
@@ -72,11 +85,7 @@ describe("VaultSetup", () => {
         createOrUpdatePassword.mockResolvedValue({ success: true, message: "password entry saved successfully."});
         getAllPasswords.mockResolvedValue({ success: true, passwords: [] });
 
-        render(
-            <Router>
-                <VaultSetup />
-            </Router>
-        );
+        renderWithProviders(<VaultSetup />);
         
         await user.type(screen.getByLabelText(/application/i), "MyApp");
         await user.type(screen.getByLabelText(/username/i), "user123");
@@ -88,7 +97,7 @@ describe("VaultSetup", () => {
             expect(createOrUpdatePassword).toHaveBeenCalledWith({
                 application: "MyApp",
                 application_username: "user123",
-                password: "pass@123"
+                password: expect.any(String),
             });
         });
 
@@ -100,11 +109,7 @@ describe("VaultSetup", () => {
         const user = userEvent.setup();
         createOrUpdatePassword.mockResolvedValueOnce({ success: false, error: "Failed to store/update password" });
 
-        render(
-            <Router>
-                <VaultSetup />
-            </Router>
-        );
+        renderWithProviders(<VaultSetup />);
         
         await user.type(screen.getByLabelText(/application/i), "MyApp");
         await user.type(screen.getByLabelText(/username/i), "user123");
@@ -119,17 +124,17 @@ describe("VaultSetup", () => {
     // Load the saved records and supports deletion of a record 
     it("lists entries and allows delete action", async () => {
         const fakeEntries = [
-            { application: "App1", password: "pwd1" },
-            { application: "App2", password: "pwd2" },
+            { application: "App1", password: "encrypted:abc123" },
+            { application: "App2", password: "encrypted:def456" },
         ];
+
+        jest.spyOn(cryptoUtils, "decryptText").mockResolvedValueOnce("decryptedApp1");
+        jest.spyOn(cryptoUtils, "decryptText").mockResolvedValueOnce("decryptedApp2");
+
         getAllPasswords.mockResolvedValueOnce({ success: true, passwords: fakeEntries });
         deletePassword.mockResolvedValueOnce({ success: true, message: "entry deleted successfully." });
 
-        render(
-            <Router>
-                <VaultSetup />
-            </Router>
-        );
+        renderWithProviders(<VaultSetup />);
 
         // wait for entries to load
         await waitFor(() => {
@@ -149,13 +154,38 @@ describe("VaultSetup", () => {
     it("redirects to login when not authenticated", () => {
         isAuthenticated.mockReturnValue(false);
 
-        render(
-            <Router>
-                <VaultSetup />
-            </Router>
-        );
+        renderWithProviders(<VaultSetup />);
         
         // Upon failure logout is asserted and triggered
         expect(logout).toHaveBeenCalled();
     });
 });    
+
+//Webcrypto testing for vault encryption/decrytion. 
+describe("VaultSetup encryption/decryption", () => {
+    let key;
+    beforeAll(async () => {
+        const password = "password123!"
+        const salt = cryptoUtils.generateSalt();
+        key = await cryptoUtils.deriveSecretKey(password, salt);
+    });
+    
+    // Ensure the data encrypted with key can be decrypted back to plaintext.
+    test("encrypts and decrypts correctly", async () => {
+        const plaintext = "MySuperSecretPassword!";
+        const encrypted = await cryptoUtils.encryptText(
+            key, plaintext);
+        const decrypted = await cryptoUtils.decryptText(
+            key, encrypted);
+        expect(decrypted).toBe(plaintext);    
+    });
+    
+    // confirm each encryption creates unique ciphertext 
+    // and verify the use  of random IV 
+    test("ciphertext is different each time (unique iv)", async () => {
+        const plaintext = "repeat";
+        const enc1 = await cryptoUtils.encryptText(key, plaintext);
+        const enc2 = await cryptoUtils.encryptText(key, plaintext);
+        expect(enc1).not.toEqual(enc2);
+    });
+});

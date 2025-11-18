@@ -2,15 +2,31 @@ import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RegisterForm from "../register_form.jsx";
+import { cryptoUtils } from "../../utils/crypto.js";
+import { BrowserRouter as Router } from "react-router-dom";
+
+// Mock webcrypto calls salt generation, encryption, and decryption 
+jest.mock("../../utils/crypto.js", () => ({
+  cryptoUtils: {
+    generateSaltAsBase64: jest.fn(() => "mocksalt123--"),
+    deriveSecretKey: jest.fn(),
+    encryptText: jest.fn(),
+    decryptText: jest.fn(),
+  },
+}));
+
 
 describe("RegisterForm", () => {
   beforeEach(() => {
     // Clear fetch mock before each test
     global.fetch.mockClear();
   });
+ 
+// Helper function to render components within a Router context
+const renderWithRouter = (ui) => render(<Router>{ui}</Router>);
 
   it("renders registration form with all required fields", () => {
-    render(<RegisterForm />);
+    renderWithRouter(<RegisterForm />);
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^password:$/i)).toBeInTheDocument();
@@ -22,7 +38,7 @@ describe("RegisterForm", () => {
 
   it("allows user to type in all form fields", async () => {
     const user = userEvent.setup();
-    render(<RegisterForm />);
+    renderWithRouter(<RegisterForm />);
 
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/^password:$/i);
@@ -44,7 +60,7 @@ describe("RegisterForm", () => {
       json: async () => ({ message: "User registered successfully" }),
     });
 
-    render(<RegisterForm />);
+    renderWithRouter(<RegisterForm />);
 
     await user.type(screen.getByLabelText(/email/i), "newuser@example.com");
     await user.type(screen.getByLabelText(/^password:$/i), "securepassword123");
@@ -65,15 +81,19 @@ describe("RegisterForm", () => {
           body: JSON.stringify({
             username: "newuser@example.com",
             password: "securepassword123",
+            salt: "mocksalt123--",
           }),
         })
       );
     });
+    // verify salt generation was called
+    expect(cryptoUtils.generateSaltAsBase64).toHaveBeenCalled();
   });
+
 
   it("shows error when passwords do not match", async () => {
     const user = userEvent.setup();
-    render(<RegisterForm />);
+    renderWithRouter(<RegisterForm />);
 
     await user.type(screen.getByLabelText(/email/i), "newuser@example.com");
     await user.type(screen.getByLabelText(/^password:$/i), "password123");
@@ -96,7 +116,7 @@ describe("RegisterForm", () => {
       json: async () => ({ error: "Email already exists" }),
     });
 
-    render(<RegisterForm />);
+    renderWithRouter(<RegisterForm />);
 
     await user.type(screen.getByLabelText(/email/i), "existing@example.com");
     await user.type(screen.getByLabelText(/^password:$/i), "password123");
@@ -110,7 +130,7 @@ describe("RegisterForm", () => {
 
   it("validates email format before submission", async () => {
     const user = userEvent.setup();
-    render(<RegisterForm />);
+    renderWithRouter(<RegisterForm />);
 
     // Test with invalid email using reliable form submission
     const emailInput = screen.getByLabelText(/email/i);

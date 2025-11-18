@@ -39,7 +39,7 @@ export default function MfaSetup() {
         URL.revokeObjectURL(qrUrl);
       }
     };
-  }, [qrUrl]);
+  }, []);
 
   const activate = async (e) => {
     e.preventDefault();
