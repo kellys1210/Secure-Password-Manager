@@ -1,22 +1,14 @@
-// custom vite enviorment variable for api communication from backend to frontend
+// custom vite environment variable for api communication from backend to frontend
 // https://vueschool.io/articles/vuejs-tutorials/how-to-use-environment-variables-in-vite-js/
 import { getEnvVar } from "./env.js";
 
-// Use /api/ proxy path for deployed versions, localhost:8080 for local development
-const isNetlifyDeployed =
-  typeof window !== "undefined" &&
-  window.location.hostname.includes("netlify.app");
-export const API_BASE = isNetlifyDeployed
-  ? "/api"
-  : getEnvVar("VITE_API_URL", "http://localhost:8080");
+// Use environment-based API URL configuration for all deployments
+// For local development: VITE_API_URL=http://localhost:8080
+// For production: VITE_API_URL=https://your-backend-url
+export const API_BASE = getEnvVar("VITE_API_URL", "http://localhost:8080");
 
 const toAPI = (u) => {
-  // For Netlify deployed versions, use proxy path
-  if (isNetlifyDeployed) {
-    // If URL already starts with /api/, don't add it again
-    return u.startsWith("/api/") ? u : `/api${u}`;
-  }
-  // For local development, use VITE_API_URL
+  // For all deployments, use the configured API_BASE
   return u.startsWith("http") ? u : `${API_BASE}${u}`;
 };
 
