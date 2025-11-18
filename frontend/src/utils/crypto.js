@@ -11,14 +11,53 @@ const IV_LENGTH = 12; // 96 bits for GCM
 const KEY_LENGTH = 256; // 256 bits for AES-256
 const TAG_LENGTH = 16; // 128 bits authentication tag
 
+// Text encoding and decoding utilities for compatibility layer
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
 /**
- * Generate a cryptographically secure random salt
+ * Convert ArrayBuffer to base64 string
+ * @param {ArrayBuffer} arr - ArrayBuffer to convert
+ * @returns {string} - Base64 encoded string
+ */
+function arrayBufferToBase64(arr) {
+  return btoa(String.fromCharCode(...new Uint8Array(arr)));
+}
+
+/**
+ * Convert base64 string back to ArrayBuffer
+ * @param {string} base64 - Base64 encoded string
+ * @returns {ArrayBuffer} - Decoded ArrayBuffer
+ */
+function base64toArrayBuffer(base64) {
+  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)).buffer;
+}
+
+/**
+ * Generate a random salt as Uint8Array (new implementation)
  * @returns {Promise<Uint8Array>} - Random salt
  */
 export async function generateSalt() {
   const salt = new Uint8Array(SALT_LENGTH);
   crypto.getRandomValues(salt);
   return salt;
+}
+
+/**
+ * Generate a random salt as ArrayBuffer (legacy compatibility)
+ * @returns {ArrayBuffer} - Random salt as ArrayBuffer
+ */
+function generateSaltLegacy() {
+  return crypto.getRandomValues(new Uint8Array(16)).buffer;
+}
+
+/**
+ * Generate a random salt and send it as a base64 string for storage
+ * @returns {string} - Base64 encoded salt
+ */
+function generateSaltAsBase64() {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  return btoa(String.fromCharCode(...salt));
 }
 
 /**
@@ -32,7 +71,7 @@ export async function generateIV() {
 }
 
 /**
- * Derive encryption key from master password using PBKDF2
+ * Derive encryption key from master password using PBKDF2 (new implementation)
  * @param {string} masterPassword - User's master password
  * @param {Uint8Array} salt - Cryptographic salt
  * @returns {Promise<CryptoKey>} - Derived AES-256-GCM key
@@ -72,7 +111,82 @@ export async function deriveKeyFromPassword(masterPassword, salt) {
 }
 
 /**
- * Encrypt a password using AES-256-GCM
+ * Use PBKDF2 to derive a symmetric encryption key from the salt and master password (legacy compatibility)
+ * @param {string} masterPassword - User's master password
+ * @param {ArrayBuffer} passwordSalt - Cryptographic salt as ArrayBuffer
+ * @returns {Promise<CryptoKey>} - Derived AES-256-GCM key
+ */
+async function deriveSecretKey(masterPassword, passwordSalt) {
+  // import the raw password into a CryptoKey
+  const masterKey = await crypto.subtle.importKey(
+    "raw",
+    textEncoder.encode(masterPassword),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+
+  // use PBKDF2 to derive 256 bit AES-GCM key
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: passwordSalt,
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    masterKey,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+}
+
+/**
+ * Compute a SHA-512 hash from the input and return it as base64
+ * @param {string|ArrayBuffer} input - Input to hash
+ * @returns {Promise<string>} - Base64 encoded hash
+ */
+async function digestAsBase(input) {
+  const data = typeof input === "string" ? textEncoder.encode(input) : input;
+  const hash = await crypto.subtle.digest("SHA-512", data);
+  return arrayBufferToBase64(hash);
+}
+
+/**
+ * Export the CryptoKey to a raw ArrayBuffer
+ * @param {CryptoKey} key - CryptoKey to export
+ * @returns {Promise<ArrayBuffer>} - Raw key data
+ */
+async function exportKey(key) {
+  return crypto.subtle.exportKey("raw", key);
+}
+
+/**
+ * Encrypts a plaintext string using AES-GCM with the CryptoKey (legacy compatibility)
+ * @param {CryptoKey} key - Encryption key
+ * @param {string} plaintext - Text to encrypt
+ * @returns {Promise<string>} - Encrypted text (iv:ciphertext format)
+ */
+async function encryptText(key, plaintext) {
+  // Generate a random IV
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+
+  // Perform encryption
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    textEncoder.encode(plaintext)
+  );
+
+  const ivBase64 = arrayBufferToBase64(iv.buffer);
+  const ciphertextBase64 = arrayBufferToBase64(encrypted);
+
+  // combine iv and ciphertext for the password in the DB.
+  return `${ivBase64}:${ciphertextBase64}`;
+}
+
+/**
+ * Encrypt a password using AES-256-GCM (new implementation)
  * @param {string} plaintext - Password to encrypt
  * @param {string} masterPassword - User's master password
  * @returns {Promise<string>} - Base64 encoded encrypted data (includes salt, IV, and auth tag)
@@ -124,7 +238,30 @@ export async function encryptPassword(plaintext, masterPassword) {
 }
 
 /**
- * Decrypt a password using AES-256-GCM
+ * Decrypt a AES-GCM ciphertext using the provided key and IV (legacy compatibility)
+ * @param {CryptoKey} key - Decryption key
+ * @param {string} combined - Encrypted text (iv:ciphertext format)
+ * @returns {Promise<string>} - Decrypted plaintext
+ */
+async function decryptText(key, combined) {
+  const [ivBase64, ciphertextBase64] = combined.split(":");
+  if (!ivBase64 || !ciphertextBase64)
+    throw new Error("Invalid encrypted format");
+
+  const iv = base64toArrayBuffer(ivBase64);
+  const ciphertext = base64toArrayBuffer(ciphertextBase64);
+
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: iv },
+    key,
+    ciphertext
+  );
+
+  return textDecoder.decode(decrypted);
+}
+
+/**
+ * Decrypt a password using AES-256-GCM (new implementation)
  * @param {string} encryptedData - Base64 encoded encrypted data
  * @param {string} masterPassword - User's master password
  * @returns {Promise<string>} - Decrypted plaintext password
@@ -228,6 +365,19 @@ export async function validateMasterPassword(encryptedData, masterPassword) {
   }
 }
 
+// Export cryptoUtils object for backward compatibility with existing components
+export const cryptoUtils = {
+  deriveSecretKey,
+  encryptText,
+  decryptText,
+  exportKey,
+  digestAsBase,
+  generateSalt: generateSaltLegacy,
+  generateSaltAsBase64,
+  arrayBufferToBase64,
+  base64toArrayBuffer,
+};
+
 export default {
   generateSalt,
   generateIV,
@@ -237,4 +387,6 @@ export default {
   encryptPasswordBatch,
   decryptPasswordBatch,
   validateMasterPassword,
+  // Also export cryptoUtils for components expecting it
+  cryptoUtils,
 };
