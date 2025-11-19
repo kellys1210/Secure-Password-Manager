@@ -1,12 +1,53 @@
-// custom vite enviorment variable for api communication from backend to frontend
-// https://vueschool.io/articles/vuejs-tutorials/how-to-use-environment-variables-in-vite-js/
-import { getEnvVar } from "./env.js";
-export const API_BASE = getEnvVar(
-  "VITE_API_URL",
-  "https://backend-163526067001.us-west1.run.app"
-);
+import { getEnvVar, isDevelopment, isProduction } from "./env.js";
+
+// Enhanced API base URL configuration with intelligent fallback
+// Uses Vite's native environment variables with smart hostname-based detection
+
+// Get API base URL with environment-aware fallback
+const getApiBaseUrl = () => {
+  const configuredUrl = getEnvVar("VITE_API_URL");
+
+  // If we have a configured URL from build-time environment variables, use it
+  if (configuredUrl && configuredUrl !== "") {
+    return configuredUrl;
+  }
+
+  // Fallback to intelligent hostname detection
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+
+    // Development environments
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0"
+    ) {
+      return "http://localhost:5001";
+    }
+  }
+
+  // Production fallback
+  return "https://backend-163526067001.us-west1.run.app";
+};
+
+export const API_BASE = getApiBaseUrl();
+
+// Helper function to build full API URLs
 const toAPI = (u) => (u.startsWith("http") ? u : `${API_BASE}${u}`);
-export const apiFetch = (u, opts = {}) => fetch(toAPI(u), opts);
+
+// Generic API fetch with proper error handling
+export const apiFetch = (u, opts = {}) => {
+  const url = toAPI(u);
+  console.log(`[API] ${opts.method || "GET"} ${url}`);
+
+  return fetch(url, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      ...opts.headers,
+    },
+  });
+};
 
 // Utility functions for authentication and JWT token management
 

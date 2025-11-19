@@ -1,0 +1,79 @@
+# Netlify configuration for Secure Password Manager
+# Handles build settings, environment variables, and deployment contexts
+
+[build]
+  # Build command for the frontend
+  command = "cd frontend && npm ci && npm run build"
+  
+  # Output directory where the built files are located
+  publish = "frontend/dist"
+  
+  # Base directory (if your project is in a subdirectory)
+  base = "frontend"
+
+# Environment variables for production builds
+[build.environment]
+  # Set NODE_ENV for proper Vite environment handling
+  NODE_ENV = "production"
+  
+  # Backend API URL for production
+  VITE_API_URL = "https://backend-163526067001.us-west1.run.app"
+
+# Configuration for deploy previews (PR builds)
+[context.deploy-preview]
+  command = "cd frontend && npm ci && npm run build"
+  publish = "frontend/dist"
+  
+  # Use the same backend URL for deploy previews
+  # This ensures frontend can communicate with backend during testing
+  environment = { 
+    NODE_ENV = "production",
+    VITE_API_URL = "https://backend-163526067001.us-west1.run.app"
+  }
+
+# Configuration for branch deploys
+[context.branch-deploy]
+  command = "cd frontend && npm ci && npm run build"
+  publish = "frontend/dist"
+  
+  # Use the production backend for branch deploys
+  # You can change this to a staging backend if you have one
+  environment = { 
+    NODE_ENV = "production",
+    VITE_API_URL = "https://backend-163526067001.us-west1.run.app"
+  }
+
+# Headers for security and CORS
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Security headers
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    
+    # CORS headers for API communication
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# Specific headers for API endpoints (if serving from Netlify)
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# Redirect all requests to index.html for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Health check endpoint
+[[redirects]]
+  from = "/health"
+  to = "/"
+  status = 200
