@@ -42,4 +42,26 @@ export default defineConfig([
       },
     },
   },
+  {
+    files: ["**/crypto.manual.test.js"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        encryptPassword: "readonly",
+        decryptPassword: "readonly",
+        encryptPasswordBatch: "readonly",
+        decryptPasswordBatch: "readonly",
+      },
+    },
+  },
+  {
+    files: ["**/verify-crypto.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        Buffer: "readonly",
+        process: "readonly",
+      },
+    },
+  },
 ]);
