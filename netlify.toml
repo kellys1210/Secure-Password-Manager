@@ -2,13 +2,13 @@
 # Handles build settings, environment variables, and deployment contexts
 
 [build]
-  # Build command for the frontend (we're already in frontend directory)
-  command = "npm ci && npm run build"
+  # Build command for the frontend
+  command = "cd frontend && npm ci && npm run build"
   
   # Output directory where the built files are located
-  publish = "dist"
+  publish = "frontend/dist"
   
-  # Base directory (frontend directory)
+  # Base directory (repository root)
   base = "."
 
 # Environment variables for production builds
@@ -21,13 +21,13 @@
 
 # Configuration for deploy previews (PR builds)
 [context.deploy-preview]
-  command = "npm ci && npm run build"
-  publish = "dist"
+  command = "cd frontend && npm ci && npm run build"
+  publish = "frontend/dist"
 
 # Configuration for branch deploys
 [context.branch-deploy]
-  command = "npm ci && npm run build"
-  publish = "dist"
+  command = "cd frontend && npm ci && npm run build"
+  publish = "frontend/dist"
 
 # Headers for security and CORS
 [[headers]]
