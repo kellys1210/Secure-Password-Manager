@@ -13,6 +13,7 @@ export default defineConfig([
       globals: {
         ...globals.browser,
         ...globals.jest,
+        process: "readonly",
       },
       ecmaVersion: "latest",
       sourceType: "module",
@@ -38,6 +39,28 @@ export default defineConfig([
         ...globals.jest,
         ...globals.browser,
         global: "readonly",
+      },
+    },
+  },
+  {
+    files: ["**/crypto.manual.test.js"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        encryptPassword: "readonly",
+        decryptPassword: "readonly",
+        encryptPasswordBatch: "readonly",
+        decryptPasswordBatch: "readonly",
+      },
+    },
+  },
+  {
+    files: ["**/verify-crypto.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        Buffer: "readonly",
+        process: "readonly",
       },
     },
   },

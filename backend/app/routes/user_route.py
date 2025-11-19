@@ -1,14 +1,15 @@
 # user_route.py
 # Source: https://flask-sqlalchemy.readthedocs.io/en/stable/quickstart/#define-models
 
-from backend.app import db
-from backend.app.model import User
 from flask import Blueprint, request, jsonify
 
-from backend.app.service import Argon2Service, InputValidationService
+from backend.app import db
+from backend.app.model import User
+from backend.app.service import Argon2Service, InputValidationService, JwtTokenService
 
 user_bp = Blueprint("user", __name__)
 argon2 = Argon2Service()
+jwt_token = JwtTokenService()
 ivs = InputValidationService()
 
 """
@@ -42,6 +43,7 @@ def register_user():
         data = request.get_json()
         username = data.get("username")
         password = data.get("password")
+        encryption_salt = data.get("salt")
 
         if not username or not password:
             return jsonify({"error": "Username and password are required"}), 400
@@ -54,14 +56,20 @@ def register_user():
             return jsonify({"error": "Username already exists"}), 409
 
         # Check if username and password are valid
-        if not ivs.is_valid_master_username(new_username) or not ivs.is_valid_master_password(new_password):
+        if not ivs.is_valid_master_username(
+            new_username
+        ) or not ivs.is_valid_master_password(new_password):
             return jsonify({"error": "Username or password are invalid"}), 400
 
         # Create master password hash
         new_password_hash = argon2.hash_password(new_password)
 
         # Create new User object
-        new_user = User(username=new_username, password=new_password_hash)
+        new_user = User(
+            username=new_username,
+            password=new_password_hash,
+            encryption_salt=encryption_salt,
+        )
 
         # Add and save user to PostgreSQL
         db.session.add(new_user)
@@ -120,7 +128,50 @@ def login():
             user.password = argon2.hash_password(password)
             db.session.commit()
 
-        return jsonify({"message": "Login successful", "user_id": user.id}), 200
+        return (
+            jsonify(
+                {
+                    "message": "Login successful",
+                    "user_id": user.id,
+                    "salt": user.encryption_salt,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        return jsonify({"error": "Invalid request format"}), 400
+
+
+@user_bp.route("/logout", methods=["POST"])
+def logout():
+    """
+    Logout a user by adding their JWT token to the denylist.
+
+    Expected JSON payload:
+        {
+            "jwt": "string"
+        }
+
+    Returns:
+        JSON response with logout result and appropriate HTTP status code.
+        - 200: Logout successful
+        - 400: Missing JWT token or invalid JSON
+    """
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({"error": "Invalid JSON payload"}), 400
+
+        token = data.get("jwt")
+
+        # Validate required field
+        if not token:
+            return jsonify({"error": "JWT token is required"}), 400
+
+        # Add token to denylist
+        jwt_token.add_jwt_to_deny_list(token)
+
+        return jsonify({"message": "Logout successful"}), 200
     except Exception as e:
         return jsonify({"error": "Invalid request format"}), 400
 
@@ -146,6 +197,6 @@ def get_all_registered_users():
 
         user_list = [{"id": user.id, "username": user.username} for user in users]
         return jsonify(user_list), 200
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500

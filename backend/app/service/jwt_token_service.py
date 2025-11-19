@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 import jwt
+from backend.app.model import JwtDenyList
+from backend.app import db
 
 # Load environment variables from .env file
 load_dotenv()
@@ -45,9 +47,30 @@ class JwtTokenService:
         :return: True if token is valid, False otherwise
         """
         try:
+            # Check if token is on deny list
+            if JwtDenyList.query.filter_by(token=encoded_jwt).first():
+                return False
+            # Validate token
             return bool(jwt.decode(encoded_jwt, self.JWT_SECRET, algorithms=["HS256"]))
         except:
             return False
+
+    @staticmethod
+    def add_jwt_to_deny_list(encoded_jwt: str) -> None:
+        """
+        Adds a JWT token to the deny list
+        :param encoded_jwt: The encoded JWT token to add to the deny list
+        :return: None
+        """
+        if not encoded_jwt:
+            raise ValueError("Token cannot be empty or None")
+
+        # Create new record
+        deny_token = JwtDenyList(token=encoded_jwt)
+
+        # Add and save denied token to PostgreSQL
+        db.session.add(deny_token)
+        db.session.commit()
 
     def get_username_from_jwt(self, encoded_jwt: str) -> str | None:
         """
