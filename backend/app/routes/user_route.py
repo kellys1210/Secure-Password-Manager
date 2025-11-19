@@ -43,7 +43,6 @@ def register_user():
         data = request.get_json()
         username = data.get("username")
         password = data.get("password")
-        encryption_salt = data.get("salt")
 
         if not username or not password:
             return jsonify({"error": "Username and password are required"}), 400
@@ -68,7 +67,6 @@ def register_user():
         new_user = User(
             username=new_username,
             password=new_password_hash,
-            encryption_salt=encryption_salt,
         )
 
         # Add and save user to PostgreSQL
@@ -133,7 +131,6 @@ def login():
                 {
                     "message": "Login successful",
                     "user_id": user.id,
-                    "salt": user.encryption_salt,
                 }
             ),
             200,

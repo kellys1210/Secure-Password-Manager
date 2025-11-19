@@ -5,7 +5,7 @@ import { useState } from "react";
 import { validate as validateEmail } from "email-validator";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/auth.js";
-import { cryptoUtils } from "../utils/crypto.js"; 
+import { cryptoUtils } from "../utils/crypto.js";
 
 export default function RegisterForm() {
   const [email, setEmail] = useState("");
@@ -45,9 +45,6 @@ export default function RegisterForm() {
 
     setSubmitting(true);
 
-    // Generate random salt for storage. 
-    const saltBase64 = cryptoUtils.generateSaltAsBase64();
-
     try {
       // Make API call to register endpoint
       const response = await apiFetch("/users/register", {
@@ -58,7 +55,6 @@ export default function RegisterForm() {
         body: JSON.stringify({
           username: email.trim(),
           password: password,
-          salt: saltBase64,
         }),
       });
 
@@ -68,7 +64,7 @@ export default function RegisterForm() {
         // Registration successful
         setMessage(`Success! Account created for ${email}`);
         localStorage.setItem("login_username", email.trim());
-        navigate("/setup_mfa")
+        navigate("/setup_mfa");
         setEmail("");
         setPassword("");
         setConfirm("");

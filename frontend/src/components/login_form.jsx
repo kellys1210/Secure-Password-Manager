@@ -3,7 +3,7 @@
 import React from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux"
+import { useDispatch } from "react-redux";
 import { validate as validateEmail } from "email-validator";
 import { apiFetch, removeToken, logout } from "../utils/auth.js";
 import { cryptoUtils } from "../utils/crypto.js";
@@ -73,19 +73,10 @@ export default function LoginForm() {
       if (response.ok) {
         localStorage.setItem("login_username", emailNorm);
 
-        //ensure Salt is returned from backend 
-        if (!data.salt) {
-          setMessage("Session invalid - please log in again.");
-          logout(navigate);
-          return;
-        }
-        
-        // Decode salt from backend and derive AES Key
-        const saltBuffer = cryptoUtils.base64toArrayBuffer(data.salt)               
-        const secretKey = await cryptoUtils.deriveSecretKey(password, saltBuffer);
-
-        // store the key in redux
-        dispatch(setSecretKey(secretKey));
+        // Store master password for client-side encryption/decryption
+        // Note: This is stored in localStorage for the session
+        // It will be cleared on logout
+        localStorage.setItem("masterPassword", password);
 
         // Navigate to verify page
         navigate("/verify_mfa");
@@ -112,6 +103,8 @@ export default function LoginForm() {
     removeToken();
     // Clear the redux secret key
     dispatch(clearSecretKey());
+    // Clear master password from localStorage
+    localStorage.removeItem("masterPassword");
     setMessage("You have been logged out.");
     // Reset form fields
     setEmail("");
@@ -160,7 +153,8 @@ export default function LoginForm() {
         <button
           type="button"
           onClick={handleLogout}
-          style={{ marginLeft: "10px" }}>
+          style={{ marginLeft: "10px" }}
+        >
           Logout
         </button>
       )}
