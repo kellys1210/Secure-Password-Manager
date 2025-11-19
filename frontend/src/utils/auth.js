@@ -1,4 +1,4 @@
-import { getEnvVar, isDevelopment, isProduction } from "./env.js";
+import { getEnvVar } from "./env.js";
 
 // Enhanced API base URL configuration with intelligent fallback
 // Uses Vite's native environment variables with smart hostname-based detection
