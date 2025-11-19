@@ -23,25 +23,11 @@
 [context.deploy-preview]
   command = "cd frontend && npm ci && npm run build"
   publish = "frontend/dist"
-  
-  # Use the same backend URL for deploy previews
-  # This ensures frontend can communicate with backend during testing
-  environment = { 
-    NODE_ENV = "production",
-    VITE_API_URL = "https://backend-163526067001.us-west1.run.app"
-  }
 
 # Configuration for branch deploys
 [context.branch-deploy]
   command = "cd frontend && npm ci && npm run build"
   publish = "frontend/dist"
-  
-  # Use the production backend for branch deploys
-  # You can change this to a staging backend if you have one
-  environment = { 
-    NODE_ENV = "production",
-    VITE_API_URL = "https://backend-163526067001.us-west1.run.app"
-  }
 
 # Headers for security and CORS
 [[headers]]
