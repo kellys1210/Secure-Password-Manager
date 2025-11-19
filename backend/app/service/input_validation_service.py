@@ -78,6 +78,23 @@ class InputValidationService:
             password
         )
 
+    def is_valid_application_name(self, application_name: str):
+        """
+        Validates application name.
+
+        Note: Application names are displayed to users on the front end.
+        Use contains_xss_risk() to check for potentially malicious content.
+        Validation requirements are currently the same as master username.
+
+        :param application_name: The application name to store
+        :return: True if valid, False otherwise
+        """
+        # Name is correct length
+        if 1 <= len(application_name) <= 120 and not self._contains_xss_risk(application_name):
+            return True
+        return False
+
+
     @staticmethod
     def clean_input(user_input: Any) -> str:
         """
