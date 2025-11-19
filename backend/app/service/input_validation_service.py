@@ -121,7 +121,7 @@ class InputValidationService:
         :param email: The email address to validate
         :return: True if email format is valid, False otherwise
         """
-        valid_email_regex = r"^[a-z0-9_]+[\._]?[a-z0-9_]*[@]\w+[\w.-]*[.]\w+$"
+        valid_email_regex = r"^[a-zA-Z0-9_]+[\._]?[a-zA-Z0-9_]*[@]\w+[\w.-]*[.]\w+$"
         return bool(re.match(valid_email_regex, email))
 
     @staticmethod

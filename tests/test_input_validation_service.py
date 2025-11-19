@@ -135,6 +135,12 @@ class TestIsValidEmail:
         """Test valid email with subdomain"""
         assert InputValidationService.is_valid_email("user@mail.example.com") is True
 
+    def test_valid_email_with_uppercase_letters(self):
+        """Test valid email with uppercase letters"""
+        assert InputValidationService.is_valid_email("User@Example.com") is True
+        assert InputValidationService.is_valid_email("USER@EXAMPLE.COM") is True
+        assert InputValidationService.is_valid_email("John.Doe@Company.org") is True
+
     def test_invalid_email_empty_string(self):
         """Test invalid empty email"""
         assert InputValidationService.is_valid_email("") is False
@@ -186,12 +192,6 @@ class TestIsValidEmail:
         """Test invalid email with multiple @ symbols"""
         assert InputValidationService.is_valid_email("user@@example.com") is False
         assert InputValidationService.is_valid_email("user@domain@example.com") is False
-
-    def test_invalid_email_uppercase_letters(self):
-        """Test that uppercase letters are rejected (based on current regex)"""
-        # Note: Current regex only accepts lowercase
-        assert InputValidationService.is_valid_email("User@Example.com") is False
-        assert InputValidationService.is_valid_email("USER@EXAMPLE.COM") is False
 
 
 class TestIsValidMasterPassword:
