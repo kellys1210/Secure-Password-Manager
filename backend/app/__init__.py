@@ -93,7 +93,7 @@ def create_app():
             "http://localhost:3000",
             "http://localhost:5173",
             "https://secure-pw-manager.netlify.app",
-            "https://deploy-preview-*--secure-pw-manager.netlify.app"
+            "https://*.netlify.app"
         ],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization"],
