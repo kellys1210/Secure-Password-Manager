@@ -101,7 +101,7 @@ def create_app():
         origins=[
             "http://localhost:3000",
             "http://localhost:5173",
-            "https://secure-pw-manager.netlify.app",
+            "https://secure-pw-manager.netlify.app"
         ],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization"],
