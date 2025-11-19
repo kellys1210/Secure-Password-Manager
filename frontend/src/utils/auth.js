@@ -3,7 +3,7 @@
 import { getEnvVar } from "./env.js";
 export const API_BASE = getEnvVar(
   "VITE_API_URL",
-  "https://backend-163526067001.us-west1.run.app/"
+  "https://backend-163526067001.us-west1.run.app"
 );
 const toAPI = (u) => (u.startsWith("http") ? u : `${API_BASE}${u}`);
 export const apiFetch = (u, opts = {}) => fetch(toAPI(u), opts);
