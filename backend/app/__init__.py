@@ -142,7 +142,7 @@ def create_app():
             return
 
         # Skip for common development hosts
-        if not request.is_secure and not request.host.startswith(
+        if proto != "https" and not request.host.startswith(
             ("localhost", "127.0.0.1", "::1")
         ):
             url = request.url.replace("http://", "https://", 1)

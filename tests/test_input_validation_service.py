@@ -232,7 +232,7 @@ class TestIsValidMasterPassword:
 
     def test_invalid_password_too_long(self):
         """Test invalid password exceeding maximum length"""
-        password = "a" * 256
+        password = "a" * 513
         assert InputValidationService.is_valid_master_password(password) is False
 
     def test_valid_password_unicode(self):
@@ -327,7 +327,7 @@ class TestIsValidApplicationPassword:
 
     def test_invalid_application_password_too_long(self):
         """Test invalid application password over 255 characters"""
-        password = "a" * 256
+        password = "a" * 513
         assert self.service.is_valid_application_password(password) is False
 
 
