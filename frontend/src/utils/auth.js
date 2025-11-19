@@ -1,10 +1,53 @@
-// custom vite enviorment variable for api communication from backend to frontend
-// https://vueschool.io/articles/vuejs-tutorials/how-to-use-environment-variables-in-vite-js/
 import { getEnvVar } from "./env.js";
-export const API_BASE = getEnvVar("VITE_API_URL", "http://localhost:8080");
-const toAPI = (u) => (u.startsWith("http") ? u: `${API_BASE}${u}`);
-export const apiFetch = (u, opts = {}) => fetch(toAPI(u), opts);
 
+// Enhanced API base URL configuration with intelligent fallback
+// Uses Vite's native environment variables with smart hostname-based detection
+
+// Get API base URL with environment-aware fallback
+const getApiBaseUrl = () => {
+  const configuredUrl = getEnvVar("VITE_API_URL");
+
+  // If we have a configured URL from build-time environment variables, use it
+  if (configuredUrl && configuredUrl !== "") {
+    return configuredUrl;
+  }
+
+  // Fallback to intelligent hostname detection
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+
+    // Development environments
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0"
+    ) {
+      return "http://localhost:5001";
+    }
+  }
+
+  // Production fallback
+  return "https://backend-163526067001.us-west1.run.app";
+};
+
+export const API_BASE = getApiBaseUrl();
+
+// Helper function to build full API URLs
+const toAPI = (u) => (u.startsWith("http") ? u : `${API_BASE}${u}`);
+
+// Generic API fetch with proper error handling
+export const apiFetch = (u, opts = {}) => {
+  const url = toAPI(u);
+  console.log(`[API] ${opts.method || "GET"} ${url}`);
+
+  return fetch(url, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      ...opts.headers,
+    },
+  });
+};
 
 // Utility functions for authentication and JWT token management
 
@@ -94,11 +137,11 @@ export const logout = (navigate = null) => {
 
 /**
  * Initiate the TOTP setup for user. Send a POST request to the backend to create a TOTP secret
- * and return a QR code for scanning by an authenticator app. 
- * 
+ * and return a QR code for scanning by an authenticator app.
+ *
  * @param {string} username - The username to set up MFA
  *  @returns {Promise} The QR code
- * 
+ *
  */
 export const totpSetup = async (username) => {
   const response = await apiFetch("/totp/setup", {
@@ -107,7 +150,7 @@ export const totpSetup = async (username) => {
     body: JSON.stringify({ username }),
   });
 
-  if (response.ok){
+  if (response.ok) {
     const qrBlob = await response.blob();
     // Render the qr code
     return { success: true, qrBlob };
@@ -115,19 +158,19 @@ export const totpSetup = async (username) => {
     const errorText = await response.text();
     return {
       success: false,
-      error: errorText || "Failed to start TOTP setup"
+      error: errorText || "Failed to start TOTP setup",
     };
   }
 };
 
 /**
- * Verify the TOTP code during the MFA setup or login. Send  POST request to the backend to 
- * validate the entered code with the user's db secret. 
- * 
+ * Verify the TOTP code during the MFA setup or login. Send  POST request to the backend to
+ * validate the entered code with the user's db secret.
+ *
  * @param {string} username - The user's username
  * @param {string} code - TOTP code from authenticator
  * @returns {Promise} - successful setup/login
- * 
+ *
  */
 export const verifyTotp = async (username, code) => {
   const response = await apiFetch("/totp/verify", {
@@ -141,12 +184,12 @@ export const verifyTotp = async (username, code) => {
   if (response.ok) {
     return {
       success: true,
-      data, 
+      data,
     };
   } else {
     return {
-      success: false, 
-      error: data.error || "TOTP verification failed", 
+      success: false,
+      error: data.error || "TOTP verification failed",
     };
   }
 };

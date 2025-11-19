@@ -13,6 +13,7 @@ export default defineConfig([
       globals: {
         ...globals.browser,
         ...globals.jest,
+        process: "readonly",
       },
       ecmaVersion: "latest",
       sourceType: "module",
