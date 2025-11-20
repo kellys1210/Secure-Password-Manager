@@ -54,6 +54,8 @@ export default function VaultSetup() {
     }
   }, [navigate]);
 
+  // MAIN BRANCH: Additional functionality here
+
   // unlock vault and derive key
   const handleUnlock = async () => {
     setUnlockError("");
