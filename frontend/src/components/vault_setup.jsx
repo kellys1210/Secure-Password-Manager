@@ -6,9 +6,9 @@ import {
   getAllPasswords,
   deletePassword,
 } from "../utils/vault";
-import { isAuthenticated, logout } from "../utils/auth";
-import CopyPasswordButton from "./CopyPasswordButton";
-import ToastNotification from "./ToastNotification";
+import { isAuthenticated, logout } from "../utils/auth.js";
+import { cryptoUtils } from "../utils/crypto.js";
+import { useMemo } from "react";
 
 export default function VaultSetup() {
   const [application, setApplication] = useState("");
@@ -17,185 +17,512 @@ export default function VaultSetup() {
   const [message, setMessage] = useState("");
   const [entries, setEntries] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastType, setToastType] = useState("info");
+  const [showPassword, setShowPassword] = useState({ new: false });
+  const [search, setSearch] = useState("");
+  const [editing, setEditing] = useState({});
+  const [editValues, setEditValues] = useState({
+    application: "",
+    username: "",
+    password: "",
+  });
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [masterPassword, setMasterPassword] = useState("");
+  const [unlockError, setUnlockError] = useState("");
+  const [vaultKey, setVaultKey] = useState(null);
   const navigate = useNavigate();
 
-  // user is authenticated all password records load
+  // if user isn't authenticated logout
   useEffect(() => {
     if (!isAuthenticated()) {
       logout(navigate);
-    } else {
-      loadEntries();
     }
-  }, []);
+  }, [navigate]);
 
-  // Get passwords from backend
-  const loadEntries = async () => {
-    const result = await getAllPasswords();
-    if (result.success) {
-      setEntries(result.passwords);
-    } else {
-      setMessage(result.error || "Failed to load entries.");
+  // unlock vault and derive key
+  const handleUnlock = async () => {
+    setUnlockError("");
+
+    if (!masterPassword) {
+      setUnlockError("Master password required.");
+      return;
+    }
+
+    try {
+      const result = await getAllPasswords();
+
+      if (!result.success) {
+        setUnlockError("Failed to load vault data.");
+        return;
+      }
+
+      const encryptedEntries = result.passwords;
+
+      // If vault empty no validation needed
+      if (encryptedEntries.length === 0) {
+        setVaultKey(masterPassword);
+        await loadEntries(masterPassword);
+        return;
+      }
+
+      // Validate using first stored entry
+      const testCipher = encryptedEntries[0].password;
+
+      // Derive key and test decryption
+      const testKey = await cryptoUtils.deriveSecretKey(
+        masterPassword,
+        new Uint8Array([]).buffer
+      );
+      try {
+        await cryptoUtils.decryptText(testKey, testCipher);
+        const ok = true;
+        if (!ok) {
+          setUnlockError("Incorrect master password.");
+          return;
+        }
+      } catch {
+        setUnlockError("Incorrect master password.");
+        return;
+      }
+
+      // Unlock successful
+      setVaultKey(masterPassword);
+      await loadEntries(masterPassword);
+    } catch (err) {
+      console.error(err);
+      setUnlockError("Vault unlock failed.");
     }
   };
 
-  // Form submission for creating or updating an entry
+  // Load and decrypt entries
+  const loadEntries = async (key) => {
+    try {
+      const result = await getAllPasswords();
+
+      if (!result.success) {
+        setMessage(result.error || "Failed to load entries.");
+        return;
+      }
+
+      const decrypted = await Promise.all(
+        result.passwords.map(async (entry) => {
+          const key_obj = await cryptoUtils.deriveSecretKey(
+            key,
+            new Uint8Array([]).buffer
+          );
+          const clear = await cryptoUtils.decryptText(key_obj, entry.password);
+
+          return {
+            application: entry.application,
+            username: entry.application_username,
+            password: clear,
+          };
+        })
+      );
+
+      setEntries(decrypted);
+    } catch (err) {
+      console.error("Decryption failed:", err);
+      setMessage("Vault decryption error — please unlock again.");
+      setVaultKey("");
+    }
+  };
+
+  // Add and update entries
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
 
-    // Require application name
-    if (!application.trim()) {
-      setMessage("Application name is required.");
+    if (!vaultKey) {
+      setMessage("Vault is locked — unlock first.");
       return;
     }
 
-    // Require application username
-    if (!applicationUsername.trim()) {
-      setMessage("Application username is required.");
-      return;
-    }
-
-    // Require application password
-    if (!password) {
-      setMessage("Password is required.");
+    if (!application.trim() || !applicationUsername.trim() || !password) {
+      setMessage("All fields are required.");
       return;
     }
 
     setSubmitting(true);
 
-    // Make call to the backend and create or update a record.
     try {
+      const key_obj = await cryptoUtils.deriveSecretKey(
+        vaultKey,
+        new Uint8Array([]).buffer
+      );
+      const encrypted = await cryptoUtils.encryptText(key_obj, password);
+
       const result = await createOrUpdatePassword({
         application,
         application_username: applicationUsername,
-        password,
+        password: encrypted,
       });
 
       if (result.success) {
-        setMessage("Password entry saved successfully.");
+        setMessage("Password saved.");
         setApplication("");
         setApplicationUsername("");
         setPassword("");
-        await loadEntries();
+        await loadEntries(vaultKey);
       } else {
-        setMessage(result.error);
+        setMessage(result.error || "Failed to save entry.");
       }
     } catch (err) {
-      setMessage("Something went wrong. Please try again");
-      console.error("Vault setup error:", err);
+      console.error(err);
+      setMessage("Error saving entry.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Delete a password entry
+  // Delete entries
   const handleDelete = async (appName) => {
-    const result = await deletePassword(appName);
-    if (result.success) {
-      setMessage("Entry deleted successfully.");
-      await loadEntries();
-    } else {
-      setMessage(result.error || "Failed to delete entry.");
+    try {
+      const result = await deletePassword(appName);
+      if (result.success) {
+        setMessage("Entry deleted.");
+        await loadEntries(vaultKey);
+      } else {
+        setMessage(result.error || "Delete failed.");
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("Delete failed.");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
-  // Handle successful copy operation
-  const handleCopySuccess = (appName) => {
-    setToastMessage(`Password copied for ${appName}`);
-    setToastType("success");
+  // Edit entry
+  const editEntry = (app, entry) => {
+    setEditing(app);
+    setEditValues({
+      application: entry.application,
+      username: entry.username,
+      password: entry.password,
+    });
   };
 
-  // Handle copy error
-  const handleCopyError = (error) => {
-    setToastMessage(error.message || "Failed to copy password");
-    setToastType("error");
+  // Save entry edit
+  const saveEdit = async () => {
+    try {
+      if (!vaultKey) {
+        setMessage("Vault is locked.");
+        return;
+      }
+
+      const key_obj = await cryptoUtils.deriveSecretKey(
+        vaultKey,
+        new Uint8Array([]).buffer
+      );
+      const encrypted = await cryptoUtils.encryptText(
+        key_obj,
+        editValues.password
+      );
+
+      const result = await createOrUpdatePassword({
+        application: editValues.application,
+        application_username: editValues.username,
+        password: encrypted,
+      });
+
+      if (result.success) {
+        setMessage("Entry updated.");
+        setEditing(null);
+        await loadEntries(vaultKey);
+      } else {
+        setMessage("Failed to update entry.");
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("Update failed.");
+    }
   };
 
+  const cancelEdit = () => setEditing(null);
+
+  // Sort and filter entry
+  const sortEntries = useMemo(() => {
+    return entries
+      .filter((e) => e.application.toLowerCase().includes(search.toLowerCase()))
+      .sort((a, b) => a.application.localeCompare(b.application));
+  }, [entries, search]);
+
+  // Form to unlock vault with master password
+  if (!vaultKey) {
+    return (
+      <div className="max-w-sm mx-auto mt-12 bg-white p-6 shadow-md rounded-xl">
+        <h2 className="text-xl font-bold text-brandnavy mb-4">
+          Unlock Your Vault
+        </h2>
+
+        {unlockError && <p className="text-red-600 mb-3">{unlockError}</p>}
+
+        <input
+          type="password"
+          placeholder="Master Password"
+          value={masterPassword}
+          onChange={(e) => setMasterPassword(e.target.value)}
+          className="w-full p-2 mb-4 border rounded-lg"
+        />
+
+        <button
+          onClick={handleUnlock}
+          className="w-full bg-brandnavy text-white py-2 rounded-lg font-semibold"
+        >
+          Unlock Vault
+        </button>
+      </div>
+    );
+  }
+
+  // Full vault UI
   return (
-    <form onSubmit={handleSubmit}>
-      {message && <p>{message}</p>}
+    <div className="w-full max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-md mt-6">
+      {message && (
+        <p className="mb-4 text-red-600 text-sm font-medium">{message}</p>
+      )}
 
-      <label htmlFor="application">Application</label>
-      <br />
-      <input
-        id="application"
-        type="text"
-        value={application}
-        onChange={(e) => setApplication(e.target.value)}
-        required
-      />
-      <br />
-      <br />
+      {/* Add new entry */}
+      <form onSubmit={handleSubmit} className="space-y-4 mb-8">
+        <div>
+          <label className="block text-brandnavy font-semibold mb-1">
+            Application
+          </label>
+          <input
+            className="w-full p-2 border rounded-lg"
+            value={application}
+            onChange={(e) => setApplication(e.target.value)}
+            required
+          />
+        </div>
 
-      <label htmlFor="username">Username</label>
-      <br />
-      <input
-        id="username"
-        type="text"
-        value={applicationUsername}
-        onChange={(e) => setApplicationUsername(e.target.value)}
-        required
-      />
-      <br />
-      <br />
+        <div>
+          <label className="block text-brandnavy font-semibold mb-1">
+            Username
+          </label>
+          <input
+            className="w-full p-2 border rounded-lg"
+            value={applicationUsername}
+            onChange={(e) => setApplicationUsername(e.target.value)}
+            required
+          />
+        </div>
 
-      <label htmlFor="password">Password</label>
-      <br />
-      <input
-        id="password"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
-      <br />
-      <br />
+        <div>
+          <label className="block text-brandnavy font-semibold mb-1">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword.new ? "text" : "password"}
+              className="w-full p-2 border rounded-lg"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
 
-      <button type="submit" disabled={submitting}>
-        {submitting ? "Saving..." : "Save Password"}
-      </button>
+            <button
+              type="button"
+              className="absolute right-3 top-2"
+              onClick={() =>
+                setShowPassword((prev) => ({
+                  ...prev,
+                  new: !prev.new,
+                }))
+              }
+            >
+              {showPassword.new ? "👁️" : "👁️‍🗨️"}
+            </button>
+          </div>
+        </div>
 
-      <hr />
+        <button
+          className="w-full bg-brandnavy text-white py-2 rounded-lg font-semibold"
+          disabled={submitting}
+        >
+          {submitting ? "Saving..." : "Save Password"}
+        </button>
+      </form>
 
-      <h3>Saved Entries</h3>
-      {entries.length === 0 ? (
-        <p>No saved passwords.</p>
+      {/* search bar */}
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold text-brandnavy">Saved Entries</h3>
+
+        <input
+          placeholder="Search..."
+          className="p-2 w-48 border rounded-lg"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* entries table */}
+      {sortEntries.length === 0 ? (
+        <p className="text-gray-600">No saved passwords.</p>
       ) : (
-        <ul>
-          {entries.map((entry) => (
-            <li key={entry.application}>
-              <strong>{entry.application}</strong>:
-              <span className="password-hidden">••••••••</span>
-              <CopyPasswordButton
-                password={entry.password}
-                label="Copy"
-                showStatus={false}
-                onCopySuccess={() => handleCopySuccess(entry.application)}
-                onCopyError={handleCopyError}
-              />
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="bg-gray-100 border-b">
+                <th className="p-3 font-semibold text-brandnavy">App</th>
+                <th className="p-3 font-semibold text-brandnavy">Username</th>
+                <th className="p-3 font-semibold text-brandnavy">Password</th>
+                <th className="p-3 font-semibold text-brandnavy text-center">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {sortEntries.map((entry) => {
+                const app = entry.application;
+                const isEditing = editing === app;
+
+                return (
+                  <tr key={app} className="border-b hover:bg-gray-50">
+                    {/* Application */}
+                    <td className="p-3">
+                      {isEditing ? (
+                        <input
+                          className="p-2 border rounded w-full"
+                          value={editValues.application}
+                          onChange={(e) =>
+                            setEditValues({
+                              ...editValues,
+                              application: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        entry.application
+                      )}
+                    </td>
+
+                    {/* username */}
+                    <td className="p-3">
+                      {isEditing ? (
+                        <input
+                          className="p-2 border rounded w-full"
+                          value={editValues.username}
+                          onChange={(e) =>
+                            setEditValues({
+                              ...editValues,
+                              username: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        entry.username
+                      )}
+                    </td>
+
+                    {/* password */}
+                    <td className="p-3">
+                      {isEditing ? (
+                        <input
+                          className="p-2 border rounded w-full"
+                          value={editValues.password}
+                          onChange={(e) =>
+                            setEditValues({
+                              ...editValues,
+                              password: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span>
+                            {showPassword[app] ? entry.password : "••••••••"}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowPassword((prev) => ({
+                                ...prev,
+                                [app]: !prev[app],
+                              }))
+                            }
+                          >
+                            {showPassword[app] ? "👁️" : "👁️‍🗨️"}
+                          </button>
+                        </div>
+                      )}
+                    </td>
+
+                    {/* actions */}
+                    <td className="p-3 text-center flex justify-center gap-3">
+                      {isEditing ? (
+                        <>
+                          <button
+                            onClick={saveEdit}
+                            className="px-3 py-1 bg-brandnavy text-white rounded-lg hover:bg-opacity-90"
+                          >
+                            Save
+                          </button>
+
+                          <button
+                            onClick={cancelEdit}
+                            className="px-3 py-1 bg-gray-300 rounded-lg hover:bg-gray-400"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className="px-3 py-1 bg-brandnavy text-white rounded-lg hover:bg-opacity-90"
+                            onClick={() => editEntry(app, entry)}
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                            onClick={() => setDeleteTarget(app)}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* confirm delete */}
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full">
+            <h3 className="text-lg font-bold text-brandnavy mb-4">
+              Delete Entry
+            </h3>
+            <p className="mb-6">
+              Delete <strong>{deleteTarget}</strong>?
+            </p>
+
+            <div className="flex justify-end gap-3">
               <button
-                type="button"
-                onClick={() => handleDelete(entry.application)}
-                style={{ marginLeft: "10px" }}
+                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                onClick={() => setDeleteTarget(null)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                onClick={() => handleDelete(deleteTarget)}
               >
                 Delete
               </button>
-            </li>
-          ))}
-        </ul>
+            </div>
+          </div>
+        </div>
       )}
-
-      <ToastNotification
-        message={toastMessage}
-        type={toastType}
-        duration={3000}
-        onDismiss={() => {
-          setToastMessage("");
-          setToastType("info");
-        }}
-      />
-    </form>
+    </div>
   );
 }
