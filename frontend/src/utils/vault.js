@@ -56,7 +56,7 @@ export const createOrUpdatePassword = async ({
 export const deletePassword = async (application) => {
   const jwt = getToken();
 
-  const response = await apiFetch("/password", {
+  const response = await apiFetch("/pw_manager/password", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ jwt, application }),
@@ -87,7 +87,7 @@ export const deletePassword = async (application) => {
 export const getAllPasswords = async () => {
   const jwt = getToken();
 
-  const response = await apiFetch("/passwords", {
+  const response = await apiFetch("/pw_manager/passwords", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ jwt }),

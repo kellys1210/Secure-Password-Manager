@@ -1,14 +1,14 @@
 # pw_manager_route.py
 
-from backend.app import db
-from backend.app.model import Entry, User
 from flask import Blueprint, request, jsonify
 
+from backend.app import db
+from backend.app.model import Entry, User
 from backend.app.service import JwtTokenService, InputValidationService
 
 pw_manager_bp = Blueprint("pw_manager", __name__)
 jwt_token = JwtTokenService()
-ivs = InputValidationService
+ivs = InputValidationService()
 
 
 @pw_manager_bp.route("/password", methods=["PUT"])
@@ -22,6 +22,7 @@ def add_update_password():
             "application": "application_name",
             "application_username": "application_username"
             "password": "hashed_password"
+            "id": Optional["application_row_id"]
         }
 
     :return: JSON with operation result and appropriate status code
@@ -33,16 +34,17 @@ def add_update_password():
     try:
         data = request.get_json()
         jwt = data.get("jwt")
-        application = data.get("application")
+        application_name = data.get("application")
         application_username = data.get("application_username")
         password = data.get("password")
+        id_ = data.get("id")
 
         # Validate JWT token
         if not jwt or not jwt_token.validate_jwt(jwt):
             return jsonify({"error": "JWT token expired or invalid"}), 400
 
         # Validate required fields
-        if not application or not application_username or not password:
+        if not application_name or not application_username or not password:
             return (
                 jsonify({"error": "Application name, application username, and password are required"}),
                 400,
@@ -56,24 +58,30 @@ def add_update_password():
             return jsonify({"error": "User not found"}), 404
 
         # Check if application username and password are valid before storing or updating in the database
-        if not ivs.is_valid_master_username(application_username) or not ivs.is_valid_master_password(password):
-            return jsonify({"error": "Username or password are invalid"}), 400
+        if (not ivs.is_valid_master_username(application_username)
+                or not ivs.is_valid_master_password(password)
+                or not ivs.is_valid_application_name(application_name)):
+            return jsonify({"error": "Application name, username, or password are invalid"}), 400
 
         # Check if entry already exists for this user and application
-        existing_entry = Entry.query.filter_by(
-            user_id=user.id, application=application
-        ).first()
+        existing_entry = None
+        if id_:
+            existing_entry = Entry.query.filter_by(
+                id=id_
+            ).first()
 
         if existing_entry:
             # Update existing entry
+            existing_entry.application = application_name
+            existing_entry.username = application_username
             existing_entry.password = password
-            message = "Password updated successfully"
+            message = "Entry updated successfully"
         else:
             # Create new entry
             entry = Entry(
                 user_id=user.id,
-                application=application,
-                application_username=application_username,
+                application=application_name,
+                username=application_username,
                 password=password,
             )
             db.session.add(entry)
@@ -95,7 +103,7 @@ def delete_password():
     Expected JSON body:
         {
             "jwt": "valid_jwt_token",
-            "application": "application_name"
+            "id": "application_row_id"
         }
 
     :return: JSON with deletion result and appropriate status code
@@ -107,15 +115,15 @@ def delete_password():
     try:
         data = request.get_json()
         jwt = data.get("jwt")
-        application = data.get("application")
+        id_ = data.get("id")
 
         # Validate JWT token
         if not jwt or not jwt_token.validate_jwt(jwt):
             return jsonify({"error": "JWT token expired or invalid"}), 400
 
         # Validate required fields
-        if not application:
-            return jsonify({"error": "Application name is required"}), 400
+        if not id_:
+            return jsonify({"error": "Application ID is required"}), 400
 
         # Get user from JWT
         username = jwt_token.get_username_from_jwt(jwt)
@@ -125,7 +133,7 @@ def delete_password():
             return jsonify({"error": "User not found"}), 404
 
         # Find and delete the entry
-        entry = Entry.query.filter_by(user_id=user.id, application=application).first()
+        entry = Entry.query.filter_by(user_id=user.id, id=id_).first()
 
         if not entry:
             return (
@@ -179,7 +187,12 @@ def get_all_passwords():
 
         # Format the response
         passwords = [
-            {"application": entry.application, "password": entry.password}
+            {
+                "id": entry.id,
+                "application_name": entry.application,
+                "application_username": entry.username,
+                "password": entry.password
+            }
             for entry in entries
         ]
 

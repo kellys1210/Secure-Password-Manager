@@ -135,6 +135,12 @@ class TestIsValidEmail:
         """Test valid email with subdomain"""
         assert InputValidationService.is_valid_email("user@mail.example.com") is True
 
+    def test_valid_email_with_uppercase_letters(self):
+        """Test valid email with uppercase letters"""
+        assert InputValidationService.is_valid_email("User@Example.com") is True
+        assert InputValidationService.is_valid_email("USER@EXAMPLE.COM") is True
+        assert InputValidationService.is_valid_email("John.Doe@Company.org") is True
+
     def test_invalid_email_empty_string(self):
         """Test invalid empty email"""
         assert InputValidationService.is_valid_email("") is False
@@ -186,12 +192,6 @@ class TestIsValidEmail:
         """Test invalid email with multiple @ symbols"""
         assert InputValidationService.is_valid_email("user@@example.com") is False
         assert InputValidationService.is_valid_email("user@domain@example.com") is False
-
-    def test_invalid_email_uppercase_letters(self):
-        """Test that uppercase letters are rejected (based on current regex)"""
-        # Note: Current regex only accepts lowercase
-        assert InputValidationService.is_valid_email("User@Example.com") is False
-        assert InputValidationService.is_valid_email("USER@EXAMPLE.COM") is False
 
 
 class TestIsValidMasterPassword:
@@ -472,6 +472,77 @@ class TestContainsXssRisk:
         """Test detection of event handler with space before equals"""
         assert InputValidationService._contains_xss_risk("onclick =alert(1)") is True
         assert InputValidationService._contains_xss_risk("onclick  =alert(1)") is True
+
+
+class TestIsValidApplicationName:
+    def test_valid_application_name(self):
+        """Test that valid application names are accepted."""
+        validator = InputValidationService()
+        assert validator.is_valid_application_name("Google")
+        assert validator.is_valid_application_name("My Bank Account")
+        assert validator.is_valid_application_name("Work Email 2024")
+        assert validator.is_valid_application_name("a")  # Minimum length
+        assert validator.is_valid_application_name("A" * 120)  # Maximum length
+
+    def test_application_name_too_short(self):
+        """Test that empty application names are rejected."""
+        validator = InputValidationService()
+        assert not validator.is_valid_application_name("")
+
+    def test_application_name_too_long(self):
+        """Test that application names exceeding 120 characters are rejected."""
+        validator = InputValidationService()
+        assert not validator.is_valid_application_name("A" * 121)
+        assert not validator.is_valid_application_name("A" * 200)
+
+    def test_application_name_with_special_characters(self):
+        """Test that application names with special characters are accepted."""
+        validator = InputValidationService()
+        assert validator.is_valid_application_name("My-App")
+        assert validator.is_valid_application_name("App_Name")
+        assert validator.is_valid_application_name("App.Name")
+        assert validator.is_valid_application_name("App (Personal)")
+        assert validator.is_valid_application_name("Email #1")
+
+    def test_application_name_xss_script_tag(self):
+        """Test that application names containing script tags are rejected."""
+        validator = InputValidationService()
+        assert not validator.is_valid_application_name("<script>alert('xss')</script>")
+        assert not validator.is_valid_application_name("App<script>alert('xss')</script>")
+
+    def test_application_name_xss_html_tags(self):
+        """Test that application names containing HTML tags are rejected."""
+        validator = InputValidationService()
+        assert not validator.is_valid_application_name("<div>App Name</div>")
+        assert not validator.is_valid_application_name("<img src='x' onerror='alert(1)'>")
+        assert not validator.is_valid_application_name("<iframe src='malicious.com'></iframe>")
+
+    def test_application_name_xss_javascript_protocol(self):
+        """Test that application names with javascript: protocol are rejected."""
+        validator = InputValidationService()
+        assert not validator.is_valid_application_name("javascript:alert('xss')")
+        assert not validator.is_valid_application_name("App javascript:void(0)")
+
+    def test_application_name_xss_event_handlers(self):
+        """Test that application names with event handlers are rejected."""
+        validator = InputValidationService()
+        assert not validator.is_valid_application_name("App onclick=alert('xss')")
+        assert not validator.is_valid_application_name("App onload=malicious()")
+        assert not validator.is_valid_application_name("App onmouseover=steal()")
+
+    def test_application_name_with_numbers(self):
+        """Test that application names with numbers are accepted."""
+        validator = InputValidationService()
+        assert validator.is_valid_application_name("App123")
+        assert validator.is_valid_application_name("2024 Tax Software")
+        assert validator.is_valid_application_name("Version 3.0")
+
+    def test_application_name_with_unicode(self):
+        """Test that application names with unicode characters are accepted."""
+        validator = InputValidationService()
+        assert validator.is_valid_application_name("Café Application")
+        assert validator.is_valid_application_name("日本語アプリ")
+        assert validator.is_valid_application_name("App™")
 
 
 class TestEdgeCases:
