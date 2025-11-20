@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   createOrUpdatePassword,
@@ -12,6 +12,7 @@ import {
   encryptPassword,
   validateMasterPassword,
 } from "../utils/crypto.js";
+import { useMemo } from "react";
 import CopyPasswordButton from "./CopyPasswordButton";
 import ToastNotification from "./ToastNotification";
 import {
@@ -492,7 +493,7 @@ export default function VaultSetup() {
                           />
 
                           <TrashIcon
-                            className="h-5 w-5 text-red-600 cursor-pointer hover:scale-110"
+                            className="h-5 w-5 text-red-600 cursor-pointer hover-scale-110"
                             onClick={() => setDeleteTarget(app)}
                           />
                         </>
