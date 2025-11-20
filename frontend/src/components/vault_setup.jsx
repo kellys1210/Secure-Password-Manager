@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   createOrUpdatePassword,
@@ -7,12 +7,7 @@ import {
   deletePassword,
 } from "../utils/vault";
 import { isAuthenticated, logout } from "../utils/auth.js";
-import {
-  decryptPassword,
-  encryptPassword,
-  validateMasterPassword,
-} from "../utils/crypto.js";
-import { useMemo } from "react";
+import { cryptoUtils } from "../utils/crypto.js";
 import CopyPasswordButton from "./CopyPasswordButton";
 import ToastNotification from "./ToastNotification";
 import {
@@ -43,9 +38,9 @@ export default function VaultSetup() {
   const [masterPassword, setMasterPassword] = useState("");
   const [unlockError, setUnlockError] = useState("");
   const [vaultKey, setVaultKey] = useState(null);
-  const navigate = useNavigate();
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("info");
+  const navigate = useNavigate();
 
   // if user isn't authenticated logout
   useEffect(() => {
@@ -53,8 +48,6 @@ export default function VaultSetup() {
       logout(navigate);
     }
   }, [navigate]);
-
-  // MAIN BRANCH: Additional functionality here
 
   // unlock vault and derive key
   const handleUnlock = async () => {
@@ -85,15 +78,20 @@ export default function VaultSetup() {
       // Validate using first stored entry
       const testCipher = encryptedEntries[0].password;
 
-      const ok = await validateMasterPassword(testCipher, masterPassword);
-      if (!ok) {
+      // Use cryptoUtils for validation to maintain compatibility
+      const testKey = await cryptoUtils.deriveSecretKey(
+        masterPassword,
+        new Uint8Array([]).buffer
+      );
+      try {
+        await cryptoUtils.decryptText(testKey, testCipher);
+        // Unlock successful
+        setVaultKey(masterPassword);
+        await loadEntries(masterPassword);
+      } catch {
         setUnlockError("Incorrect master password.");
         return;
       }
-
-      // Unlock successful
-      setVaultKey(masterPassword);
-      await loadEntries(masterPassword);
     } catch (err) {
       console.error(err);
       setUnlockError("Vault unlock failed.");
@@ -112,7 +110,11 @@ export default function VaultSetup() {
 
       const decrypted = await Promise.all(
         result.passwords.map(async (entry) => {
-          const clear = await decryptPassword(entry.password, key);
+          const key_obj = await cryptoUtils.deriveSecretKey(
+            key,
+            new Uint8Array([]).buffer
+          );
+          const clear = await cryptoUtils.decryptText(key_obj, entry.password);
 
           return {
             application: entry.application,
@@ -153,7 +155,11 @@ export default function VaultSetup() {
     setSubmitting(true);
 
     try {
-      const encrypted = await encryptPassword(password, vaultKey);
+      const key_obj = await cryptoUtils.deriveSecretKey(
+        vaultKey,
+        new Uint8Array([]).buffer
+      );
+      const encrypted = await cryptoUtils.encryptText(key_obj, password);
 
       const result = await createOrUpdatePassword({
         application,
@@ -231,7 +237,14 @@ export default function VaultSetup() {
         return;
       }
 
-      const encrypted = await encryptPassword(editValues.password, vaultKey);
+      const key_obj = await cryptoUtils.deriveSecretKey(
+        vaultKey,
+        new Uint8Array([]).buffer
+      );
+      const encrypted = await cryptoUtils.encryptText(
+        key_obj,
+        editValues.password
+      );
 
       const result = await createOrUpdatePassword({
         application: editValues.application,
@@ -493,7 +506,7 @@ export default function VaultSetup() {
                           />
 
                           <TrashIcon
-                            className="h-5 w-5 text-red-600 cursor-pointer hover-scale-110"
+                            className="h-5 w-5 text-red-600 cursor-pointer hover:scale-110"
                             onClick={() => setDeleteTarget(app)}
                           />
                         </>
