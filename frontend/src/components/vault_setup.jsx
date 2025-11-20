@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   createOrUpdatePassword,
@@ -8,7 +8,16 @@ import {
 } from "../utils/vault";
 import { isAuthenticated, logout } from "../utils/auth.js";
 import { cryptoUtils } from "../utils/crypto.js";
-import { useMemo } from "react";
+import CopyPasswordButton from "./CopyPasswordButton";
+import ToastNotification from "./ToastNotification";
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
+import UnlockVault from "./unlock_vault.jsx";
+import { validate as validateEmail } from "email-validator";
 
 export default function VaultSetup() {
   const [application, setApplication] = useState("");
@@ -29,6 +38,8 @@ export default function VaultSetup() {
   const [masterPassword, setMasterPassword] = useState("");
   const [unlockError, setUnlockError] = useState("");
   const [vaultKey, setVaultKey] = useState(null);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("info");
   const navigate = useNavigate();
 
   // if user isn't authenticated logout
@@ -67,26 +78,20 @@ export default function VaultSetup() {
       // Validate using first stored entry
       const testCipher = encryptedEntries[0].password;
 
-      // Derive key and test decryption
+      // Use cryptoUtils for validation to maintain compatibility
       const testKey = await cryptoUtils.deriveSecretKey(
         masterPassword,
         new Uint8Array([]).buffer
       );
       try {
         await cryptoUtils.decryptText(testKey, testCipher);
-        const ok = true;
-        if (!ok) {
-          setUnlockError("Incorrect master password.");
-          return;
-        }
+        // Unlock successful
+        setVaultKey(masterPassword);
+        await loadEntries(masterPassword);
       } catch {
         setUnlockError("Incorrect master password.");
         return;
       }
-
-      // Unlock successful
-      setVaultKey(masterPassword);
-      await loadEntries(masterPassword);
     } catch (err) {
       console.error(err);
       setUnlockError("Vault unlock failed.");
@@ -142,6 +147,11 @@ export default function VaultSetup() {
       return;
     }
 
+    if (!validateEmail(applicationUsername.trim())) {
+      setMessage("Username must be a valid email address.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -192,6 +202,18 @@ export default function VaultSetup() {
     }
   };
 
+  // Handle successful copy operation
+  const handleCopySuccess = (appName) => {
+    setToastMessage(`Password copied for ${appName}`);
+    setToastType("success");
+  };
+
+  // Handle copy error
+  const handleCopyError = (error) => {
+    setToastMessage(error.message || "Failed to copy password");
+    setToastType("error");
+  };
+
   // Edit entry
   const editEntry = (app, entry) => {
     setEditing(app);
@@ -207,6 +229,11 @@ export default function VaultSetup() {
     try {
       if (!vaultKey) {
         setMessage("Vault is locked.");
+        return;
+      }
+
+      if (!validateEmail(editValues.username.trim())) {
+        setMessage("Username must be a valid email address.");
         return;
       }
 
@@ -250,28 +277,12 @@ export default function VaultSetup() {
   // Form to unlock vault with master password
   if (!vaultKey) {
     return (
-      <div className="max-w-sm mx-auto mt-12 bg-white p-6 shadow-md rounded-xl">
-        <h2 className="text-xl font-bold text-brandnavy mb-4">
-          Unlock Your Vault
-        </h2>
-
-        {unlockError && <p className="text-red-600 mb-3">{unlockError}</p>}
-
-        <input
-          type="password"
-          placeholder="Master Password"
-          value={masterPassword}
-          onChange={(e) => setMasterPassword(e.target.value)}
-          className="w-full p-2 mb-4 border rounded-lg"
-        />
-
-        <button
-          onClick={handleUnlock}
-          className="w-full bg-brandnavy text-white py-2 rounded-lg font-semibold"
-        >
-          Unlock Vault
-        </button>
-      </div>
+      <UnlockVault
+        masterPassword={masterPassword}
+        setMasterPassword={setMasterPassword}
+        unlockError={unlockError}
+        handleUnlock={handleUnlock}
+      />
     );
   }
 
@@ -331,7 +342,11 @@ export default function VaultSetup() {
                 }))
               }
             >
-              {showPassword.new ? "👁️" : "👁️‍🗨️"}
+              {showPassword.new ? (
+                <EyeSlashIcon className="h-5 w-5 text-gray-600" />
+              ) : (
+                <EyeIcon className="h-5 w-5 text-gray-600" />
+              )}
             </button>
           </div>
         </div>
@@ -444,8 +459,23 @@ export default function VaultSetup() {
                               }))
                             }
                           >
-                            {showPassword[app] ? "👁️" : "👁️‍🗨️"}
+                            {showPassword[app] ? (
+                              <EyeSlashIcon className="h-5 w-5 text-gray-600 hover:text-brandnavy" />
+                            ) : (
+                              <EyeIcon className="h-5 w-5 text-gray-600 hover:text-brandnavy" />
+                            )}
                           </button>
+
+                          {/* CopyPasswordButton — uses toast */}
+                          <CopyPasswordButton
+                            password={entry.password}
+                            label="Copy"
+                            showStatus={false}
+                            onCopySuccess={() =>
+                              handleCopySuccess(entry.application)
+                            }
+                            onCopyError={handleCopyError}
+                          />
                         </div>
                       )}
                     </td>
@@ -470,19 +500,15 @@ export default function VaultSetup() {
                         </>
                       ) : (
                         <>
-                          <button
-                            className="px-3 py-1 bg-brandnavy text-white rounded-lg hover:bg-opacity-90"
+                          <PencilSquareIcon
+                            className="h-5 w-5 text-brandnavy cursor-pointer hover:scale-110"
                             onClick={() => editEntry(app, entry)}
-                          >
-                            Edit
-                          </button>
+                          />
 
-                          <button
-                            className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                          <TrashIcon
+                            className="h-5 w-5 text-red-600 cursor-pointer hover:scale-110"
                             onClick={() => setDeleteTarget(app)}
-                          >
-                            Delete
-                          </button>
+                          />
                         </>
                       )}
                     </td>
@@ -523,6 +549,15 @@ export default function VaultSetup() {
           </div>
         </div>
       )}
+      <ToastNotification
+        message={toastMessage}
+        type={toastType}
+        duration={3000}
+        onDismiss={() => {
+          setToastMessage("");
+          setToastType("info");
+        }}
+      />
     </div>
   );
 }
