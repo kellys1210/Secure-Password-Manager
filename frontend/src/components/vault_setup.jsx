@@ -202,16 +202,50 @@ export default function VaultSetup() {
     }
   };
 
-  // Handle successful copy operation
-  const handleCopySuccess = (appName) => {
-    setToastMessage(`Password copied for ${appName}`);
-    setToastType("success");
+  // Edit entry
+  const editEntry = (app, entry) => {
+    setEditing(app);
+    setEditValues({
+      application: entry.application,
+      username: entry.username,
+      password: entry.password,
+    });
   };
 
-  // Handle copy error
-  const handleCopyError = (error) => {
-    setToastMessage(error.message || "Failed to copy password");
-    setToastType("error");
+  // Save entry edit
+  const saveEdit = async () => {
+    try {
+      if (!vaultKey) {
+        setMessage("Vault is locked.");
+        return;
+      }
+
+      const key_obj = await cryptoUtils.deriveSecretKey(
+        vaultKey,
+        new Uint8Array([]).buffer
+      );
+      const encrypted = await cryptoUtils.encryptText(
+        key_obj,
+        editValues.password
+      );
+
+      const result = await createOrUpdatePassword({
+        application: editValues.application,
+        application_username: editValues.username,
+        password: encrypted,
+      });
+
+      if (result.success) {
+        setMessage("Entry updated.");
+        setEditing(null);
+        await loadEntries(vaultKey);
+      } else {
+        setMessage("Failed to update entry.");
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("Update failed.");
+    }
   };
 
   // Edit entry

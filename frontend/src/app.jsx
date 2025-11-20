@@ -7,6 +7,7 @@ import SetupMfaPage from "./pages/setup_mfa_page";
 import VerifyMfaPage from "./pages/verify_mfa_page";
 import VaultPage from "./pages/vault_page";
 
+
 // Routes for current page setups. 
 export default function App() {
   return (

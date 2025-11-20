@@ -1,0 +1,8 @@
+# Netlify redirects for Single Page Application (SPA)
+# This ensures all routes serve index.html for client-side routing
+
+# API routes - proxy to backend if needed
+# /api/* /.netlify/functions/api/:splat 200
+
+# SPA routes - serve index.html for all non-file requests
+/*    /index.html   200
