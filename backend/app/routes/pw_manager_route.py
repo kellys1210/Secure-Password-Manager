@@ -73,7 +73,7 @@ def add_update_password():
         if existing_entry:
             # Update existing entry
             existing_entry.application = application_name
-            existing_entry.username = username
+            existing_entry.username = application_username
             existing_entry.password = password
             message = "Entry updated successfully"
         else:
