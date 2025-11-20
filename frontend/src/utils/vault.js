@@ -10,13 +10,15 @@ export const createOrUpdatePassword = async ({
   application,
   application_username,
   password,
+  id = null,
 }) => {
   const jwt = getToken();
 
   const response = await apiFetch("/pw_manager/password", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jwt, application, application_username, password }),
+    body: JSON.stringify({ jwt, application, application_username, 
+      password, ...(id && { id }), }),
   });
 
   const data = await response.json().catch(() => ({}));
@@ -34,13 +36,13 @@ export const createOrUpdatePassword = async ({
   }
 };
 
-export const deletePassword = async (application) => {
+export const deletePassword = async (id) => {
   const jwt = getToken();
 
   const response = await apiFetch("/pw_manager/password", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jwt, application }),
+    body: JSON.stringify({ jwt, id }),
   });
 
   const data = await response.json().catch(() => ({}));

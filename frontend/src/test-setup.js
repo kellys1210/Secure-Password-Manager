@@ -75,7 +75,17 @@ global.TextDecoder = TextDecoder;
 // Polyfill for Web Crypto API in Node.js test environment
 import { Crypto } from "@peculiar/webcrypto";
 const crypto = new Crypto();
-global.crypto = crypto;
+
+// Handle read-only crypto property in newer Jest versions
+if (typeof global.crypto !== "undefined") {
+  Object.defineProperty(global, "crypto", {
+    value: crypto,
+    writable: true,
+    configurable: true,
+  });
+} else {
+  global.crypto = crypto;
+}
 
 // Mock email-validator for Jest tests
 jest.mock("email-validator", () => ({
