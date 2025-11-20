@@ -16,7 +16,6 @@ import {
   decryptPassword,
   validateMasterPassword,
 } from "../../utils/crypto.js";
-import { setSecretKey } from "../../store/keySlice.js";
 
 // Mock the API calls for db
 jest.mock("../../utils/vault", () => ({
