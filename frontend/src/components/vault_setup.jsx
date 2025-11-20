@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   createOrUpdatePassword,
@@ -12,7 +12,6 @@ import {
   encryptPassword,
   validateMasterPassword,
 } from "../utils/crypto.js";
-import { useMemo } from "react";
 import CopyPasswordButton from "./CopyPasswordButton";
 import ToastNotification from "./ToastNotification";
 import {

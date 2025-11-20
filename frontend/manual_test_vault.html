@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Vault Component Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      .success {
+        color: green;
+      }
+      .error {
+        color: red;
+      }
+      .warning {
+        color: orange;
+      }
+      .test-result {
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Vault Component Manual Test Guide</h1>
+
+    <div class="test-section">
+      <h2>Pre-Test Setup</h2>
+      <ol>
+        <li>
+          Start the backend server: <code>cd backend && python app.py</code>
+        </li>
+        <li>Start the frontend: <code>cd frontend && npm run dev</code></li>
+        <li>Register a new user account</li>
+        <li>Navigate to the vault page</li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 1: Vault Unlock Functionality</h2>
+      <div class="test-result">
+        <strong>Expected Behavior:</strong> Vault should unlock with correct
+        master password
+      </div>
+      <ol>
+        <li>Enter master password</li>
+        <li>Click "Unlock Vault"</li>
+        <li class="success">
+          ✓ Success: Vault unlocks and shows password entry form
+        </li>
+        <li class="error">
+          ✗ Failure: Error message "Incorrect master password" or validation
+          fails
+        </li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 2: Email Validation</h2>
+      <div class="test-result">
+        <strong>Expected Behavior:</strong> Only valid email addresses should be
+        accepted as usernames
+      </div>
+      <ol>
+        <li>Try to save entry with username "invalid-email"</li>
+        <li class="success">
+          ✓ Success: Shows error "Username must be a valid email address"
+        </li>
+        <li>Try to save entry with username "test@example.com"</li>
+        <li class="success">✓ Success: Entry saves successfully</li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 3: Password Encryption/Decryption</h2>
+      <div class="test-result">
+        <strong>Expected Behavior:</strong> Passwords should encrypt when saved
+        and decrypt when displayed
+      </div>
+      <ol>
+        <li>
+          Add new entry: Application="TestApp", Username="test@example.com",
+          Password="MySecret123!"
+        </li>
+        <li class="success">
+          ✓ Success: Entry appears in list with masked password (••••••••)
+        </li>
+        <li>Click eye icon to show password</li>
+        <li class="success">✓ Success: Password displays as "MySecret123!"</li>
+        <li>Refresh page and unlock vault again</li>
+        <li class="success">
+          ✓ Success: Entry still appears with correct decrypted password
+        </li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 4: Copy Password Button & Toast Notifications</h2>
+      <div class="test-result">
+        <strong>Expected Behavior:</strong> Clicking copy button should copy
+        password and show toast notification
+      </div>
+      <ol>
+        <li>Add a test entry if none exist</li>
+        <li>Click "Copy" button next to a password entry</li>
+        <li class="success">
+          ✓ Success: Toast notification appears with "Password copied for
+          [AppName]"
+        </li>
+        <li>Paste clipboard content</li>
+        <li class="success">
+          ✓ Success: Pasted content matches the original password
+        </li>
+        <li>Try copying again (if browser denies permission)</li>
+        <li class="warning">
+          ⚠ Warning: Toast shows error message if copy fails
+        </li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 5: Edit Entry Functionality</h2>
+      <div class="test-result">
+        <strong>Expected Behavior:</strong> Should be able to edit existing
+        entries with email validation
+      </div>
+      <ol>
+        <li>Click pencil/edit icon on an existing entry</li>
+        <li>Change username to invalid email</li>
+        <li>Click Save</li>
+        <li class="success">
+          ✓ Success: Shows error "Username must be a valid email address"
+        </li>
+        <li>Change username to valid email "updated@example.com"</li>
+        <li>Click Save</li>
+        <li class="success">
+          ✓ Success: Entry updates and shows success message
+        </li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 6: Delete Entry Functionality</h2>
+      <div class="test-result">
+        <strong>Expected Behavior:</strong> Should be able to delete entries
+        with confirmation
+      </div>
+      <ol>
+        <li>Click trash/delete icon on an entry</li>
+        <li class="success">✓ Success: Confirmation dialog appears</li>
+        <li>Click Cancel</li>
+        <li class="success">✓ Success: Dialog closes, entry remains</li>
+        <li>Click trash icon again and click Delete</li>
+        <li class="success">
+          ✓ Success: Entry removed and success message shown
+        </li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 7: Search Functionality</h2>
+      <div class="test-result">
+        <strong>Expected Behavior:</strong> Search should filter entries by
+        application name
+      </div>
+      <ol>
+        <li>Add multiple entries: "Gmail", "GitHub", "Banking"</li>
+        <li>Enter "git" in search box</li>
+        <li class="success">✓ Success: Only "GitHub" entry appears</li>
+        <li>Clear search</li>
+        <li class="success">✓ Success: All entries appear again</li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 8: Master Password Validation with Salt</h2>
+      <div class="test-result">
+        <strong>Expected Behavior:</strong> Master password validation should
+        work with the salt-based encryption
+      </div>
+      <ol>
+        <li>Add an entry with master password "TestMaster123"</li>
+        <li>Lock vault (refresh page or implement lock functionality)</li>
+        <li>Try to unlock with wrong password "WrongPassword"</li>
+        <li class="success">
+          ✓ Success: Shows error "Incorrect master password"
+        </li>
+        <li>Unlock with correct password "TestMaster123"</li>
+        <li class="success">
+          ✓ Success: Vault unlocks and entries decrypt correctly
+        </li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Known Issues to Check</h2>
+      <ul>
+        <li class="warning">
+          ⚠ Check browser console for any errors during vault operations
+        </li>
+        <li class="warning">
+          ⚠ Verify that encrypted data in network requests is properly formatted
+        </li>
+        <li class="warning">
+          ⚠ Ensure that salt is being properly handled in encryption/decryption
+        </li>
+        <li class="warning">
+          ⚠ Check that toast notifications auto-dismiss after 3 seconds
+        </li>
+      </ul>
+    </div>
+
+    <div class="test-section">
+      <h2>Test Results Summary</h2>
+      <p>After running all tests, document any failures:</p>
+      <ul>
+        <li>Failed tests: ___________________</li>
+        <li>Error messages: ___________________</li>
+        <li>Browser console errors: ___________________</li>
+        <li>Network request issues: ___________________</li>
+      </ul>
+    </div>
+
+    <script>
+      // Auto-run some basic checks
+      console.log("=== VAULT COMPONENT TEST GUIDE ===");
+      console.log("Follow the manual tests above to verify functionality");
+      console.log("Check browser console for any errors during testing");
+    </script>
+  </body>
+</html>
