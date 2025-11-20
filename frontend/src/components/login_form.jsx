@@ -5,9 +5,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { validate as validateEmail } from "email-validator";
-import { apiFetch, removeToken, logout } from "../utils/auth.js";
-import { cryptoUtils } from "../utils/crypto.js";
-import { setSecretKey, clearSecretKey } from "../store/keySlice.js";
+import { apiFetch, removeToken } from "../utils/auth.js";
+import { clearSecretKey } from "../store/keySlice.js";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");

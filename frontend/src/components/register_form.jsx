@@ -5,7 +5,6 @@ import { useState } from "react";
 import { validate as validateEmail } from "email-validator";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/auth.js";
-import { cryptoUtils } from "../utils/crypto.js";
 
 export default function RegisterForm() {
   const [email, setEmail] = useState("");
