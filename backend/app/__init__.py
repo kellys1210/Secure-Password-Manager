@@ -82,7 +82,16 @@ def create_app():
         app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"creator": getconn}
 
     else:
-        app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+        database_url = os.getenv("DATABASE_URL")
+        print(f"--- DATABASE_URL from environment: {database_url} ---")
+        if not database_url:
+            # Fallback to in-memory SQLite if DATABASE_URL is not set
+            database_url = "sqlite:///:memory:"
+            print("--- DATABASE_URL not set, using in-memory SQLite fallback ---")
+        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+        print(
+            f"--- SQLALCHEMY_DATABASE_URI set to: {app.config['SQLALCHEMY_DATABASE_URI']} ---"
+        )
 
     db.init_app(app)
 
@@ -127,11 +136,13 @@ def create_app():
         if app.debug or app.config.get("TESTING"):
             return
 
-        # Detect protocol of original request from Cloud Run, defaults to http
-        proto = request.headers.get("X-Forwarded-Proto", "http")
+        # Check if request is already secure via load balancer
+        forwarded_proto = request.headers.get("X-Forwarded-Proto")
+        if forwarded_proto == "https":
+            return
 
         # Skip for common development hosts
-        if proto != "https" and not request.host.startswith(
+        if not request.is_secure and not request.host.startswith(
             ("localhost", "127.0.0.1", "::1")
         ):
             url = request.url.replace("http://", "https://", 1)
@@ -142,6 +153,11 @@ def create_app():
     @app.route("/")
     def index():
         return "You're in the backend :)"
+
+    @app.route("/health")
+    def health():
+        """Simple health check endpoint for Cloud Run"""
+        return {"status": "healthy", "service": "password-manager-backend"}, 200
 
     @app.route("/db_check")
     def db_check():
@@ -166,7 +182,17 @@ def create_app():
         db_type = "Cloud SQL" if use_cloud_sql else "Local DB (flask_db)"
         try:
             with db.engine.connect() as connection:
-                result = connection.execute(sqlalchemy.text("SELECT NOW()")).scalar()
+                # Use database-agnostic query for health check
+                if use_cloud_sql:
+                    # PostgreSQL has NOW() function
+                    result = connection.execute(
+                        sqlalchemy.text("SELECT NOW()")
+                    ).scalar()
+                else:
+                    # SQLite uses datetime('now')
+                    result = connection.execute(
+                        sqlalchemy.text("SELECT datetime('now')")
+                    ).scalar()
             return {"status": f"Connected to {db_type}", "timestamp": str(result)}, 200
         except Exception as e:
             return {"status": f"Connection to {db_type} failed", "error": str(e)}, 500

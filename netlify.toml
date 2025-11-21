@@ -1,65 +1,41 @@
-# Netlify configuration for Secure Password Manager
-# Handles build settings, environment variables, and deployment contexts
-
 [build]
-  # Build command for the frontend
-  command = "cd frontend && npm ci && npm run build"
-  
-  # Output directory where the built files are located
-  publish = "frontend/dist"
-  
-  # Base directory (repository root)
-  base = "."
+  publish = "dist"
+  command = "npm install && npm run build"
 
-# Environment variables for production builds
 [build.environment]
-  # Set NODE_ENV for proper Vite environment handling
-  NODE_ENV = "production"
-  
-  # Backend API URL for production
-  VITE_API_URL = "https://backend-163526067001.us-west1.run.app"
+  NODE_VERSION = "22"
+  NPM_VERSION = "10"
 
-# Configuration for deploy previews (PR builds)
-[context.deploy-preview]
-  command = "cd frontend && npm ci && npm run build"
-  publish = "frontend/dist"
-
-# Configuration for branch deploys
-[context.branch-deploy]
-  command = "cd frontend && npm ci && npm run build"
-  publish = "frontend/dist"
-
-# Headers for security and CORS
-[[headers]]
-  for = "/*"
-  [headers.values]
-    # Security headers
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    
-    # CORS headers for API communication
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-
-# Specific headers for API endpoints (if serving from Netlify)
-[[headers]]
-  for = "/api/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-
-# Redirect all requests to index.html for client-side routing
+# Redirect all requests to index.html for SPA routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Health check endpoint
+# API proxy for backend communication
 [[redirects]]
-  from = "/health"
-  to = "/"
+  from = "/api/*"
+  to = "https://password-manager-backend-ts4ajixepa-uw.a.run.app/:splat"
   status = 200
+  force = true
+
+# Headers for security and CORS
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[context.production]
+  environment = { VITE_API_URL = "https://password-manager-backend-ts4ajixepa-uw.a.run.app" }
+
+[context.deploy-preview]
+  environment = { VITE_API_URL = "https://password-manager-backend-ts4ajixepa-uw.a.run.app" }

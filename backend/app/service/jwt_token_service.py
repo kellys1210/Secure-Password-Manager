@@ -20,7 +20,7 @@ class JwtTokenService:
     Uses HS256 algorithm with a 30-minute token expiration period.
     """
 
-    JWT_SECRET = os.getenv("JWT_SECRET")
+    JWT_SECRET = os.getenv("JWT_SECRET", "default_jwt_secret_for_testing")
     ALG = "HS256"
     TOKEN_EXPIRATION_MINUTES = 30
 

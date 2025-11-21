@@ -209,3 +209,5 @@ __marimo__/
 
 # Frontend:
 node_modules
+# Local Netlify folder
+.netlify

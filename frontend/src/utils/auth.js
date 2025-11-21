@@ -1,53 +1,18 @@
+// custom vite environment variable for api communication from backend to frontend
+// https://vueschool.io/articles/vuejs-tutorials/how-to-use-environment-variables-in-vite-js/
 import { getEnvVar } from "./env.js";
 
-// Enhanced API base URL configuration with intelligent fallback
-// Uses Vite's native environment variables with smart hostname-based detection
+// Use environment-based API URL configuration for all deployments
+// For local development: VITE_API_URL=http://localhost:8080
+// For production: VITE_API_URL=https://your-backend-url
+export const API_BASE = getEnvVar("VITE_API_URL", "http://localhost:8080");
 
-// Get API base URL with environment-aware fallback
-const getApiBaseUrl = () => {
-  const configuredUrl = getEnvVar("VITE_API_URL");
-
-  // If we have a configured URL from build-time environment variables, use it
-  if (configuredUrl && configuredUrl !== "") {
-    return configuredUrl;
-  }
-
-  // Fallback to intelligent hostname detection
-  if (typeof window !== "undefined") {
-    const hostname = window.location.hostname;
-
-    // Development environments
-    if (
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname === "0.0.0.0"
-    ) {
-      return "http://localhost:5001";
-    }
-  }
-
-  // Production fallback
-  return "https://backend-163526067001.us-west1.run.app";
+const toAPI = (u) => {
+  // For all deployments, use the configured API_BASE
+  return u.startsWith("http") ? u : `${API_BASE}${u}`;
 };
 
-export const API_BASE = getApiBaseUrl();
-
-// Helper function to build full API URLs
-const toAPI = (u) => (u.startsWith("http") ? u : `${API_BASE}${u}`);
-
-// Generic API fetch with proper error handling
-export const apiFetch = (u, opts = {}) => {
-  const url = toAPI(u);
-  console.log(`[API] ${opts.method || "GET"} ${url}`);
-
-  return fetch(url, {
-    ...opts,
-    headers: {
-      "Content-Type": "application/json",
-      ...opts.headers,
-    },
-  });
-};
+export const apiFetch = (u, opts = {}) => fetch(toAPI(u), opts);
 
 // Utility functions for authentication and JWT token management
 
