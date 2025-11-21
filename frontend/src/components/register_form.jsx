@@ -53,7 +53,7 @@ export default function RegisterForm() {
         },
         body: JSON.stringify({
           username: email.trim(),
-          password: password
+          password: password,
         }),
       });
 
@@ -63,7 +63,7 @@ export default function RegisterForm() {
         // Registration successful
         setMessage(`Success! Account created for ${email}`);
         localStorage.setItem("login_username", email.trim());
-        navigate("/setup_mfa")
+        navigate("/setup_mfa");
         setEmail("");
         setPassword("");
         setConfirm("");

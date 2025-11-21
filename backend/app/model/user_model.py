@@ -45,7 +45,6 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(512), nullable=False)
     secret = db.Column(db.String(255), nullable=True)
-    encryption_salt = db.Column(db.String(64), nullable=True)
 
     def __str__(self):
         """

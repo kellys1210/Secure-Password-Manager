@@ -1,12 +1,13 @@
 -- Database migration to support WebCrypto encryption
--- This migration adds encryption salt column and increases password field size
+-- This migration removes the encryption_salt column (no longer needed)
+-- and increases password field size for encrypted payloads
 
--- Add encryption_salt column to users table for key derivation
-ALTER TABLE users 
-ADD COLUMN IF NOT EXISTS encryption_salt VARCHAR(64);
+-- Remove encryption_salt column from users table if it exists
+-- Note: PostgreSQL syntax - for SQLite, you may need to recreate the table
+ALTER TABLE users DROP COLUMN IF EXISTS encryption_salt;
 
 -- Increase password column size in entries table to accommodate encrypted payloads
--- Encrypted passwords include IV, ciphertext, and auth tag, requiring more space
+-- Encrypted passwords include salt, IV, ciphertext, and auth tag, requiring more space
 ALTER TABLE entries 
 ALTER COLUMN password TYPE VARCHAR(512);
 
