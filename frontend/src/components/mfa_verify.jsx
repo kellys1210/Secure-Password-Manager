@@ -30,11 +30,15 @@ export default function MfaVerify() {
     };
 
     return (
-        <div>
-            <h3>Verify Your MFA Code</h3>
-            {msg && <p>{msg}</p>}
+        <div
+        className="w-full max-w-md mx-auto bg-white p-6 rounded-xl shadow-md mt-6">
+            <h3 className="text-2xl font-bold text-brandnavy mb-4 text-center">
+                Verify Your MFA Code</h3>
+            {msg && <p className="mb-4 text-red-600 text-sm font-medium text-center">
+                {msg}</p>}
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit}
+            className="flex flex-col items-center gap-4">
                 <input
                 inputMode="numeric"
                 pattern="\d{6}"
@@ -44,8 +48,13 @@ export default function MfaVerify() {
                    setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
                 }
                 required
+                className="w-40 p-2 border border-gray-300 rounded-lg text-center 
+                   focus:outline-none focus:ring-2 focus:ring-brandnavy"
             /> 
-            <button type="submit">Verify</button>    
+            <button type="submit"
+            className="w-40 bg-brandnavy text-white py-2 rounded-lg font-semibold 
+            hover:bg-opacity-90 transition disabled:opacity-60">
+                Verify</button>
             </form>
         </div>
     );

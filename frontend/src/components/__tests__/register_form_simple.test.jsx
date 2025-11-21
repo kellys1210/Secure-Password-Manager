@@ -4,6 +4,10 @@ import userEvent from "@testing-library/user-event";
 import RegisterForm from "../register_form.jsx";
 import { BrowserRouter as Router } from "react-router-dom";
 
+// Mock getEnvVar for api URL
+jest.mock("../../utils/env.js", () => ({
+  getEnvVar: () => "http://localhost:8080"
+}));
 
 describe("RegisterForm", () => {
   beforeEach(() => {
