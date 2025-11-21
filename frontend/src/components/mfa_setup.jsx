@@ -61,13 +61,20 @@ export default function MfaSetup() {
     }
   };
   return (
-    <div>
-      <h3> Set up MFA (TOTP) </h3>
-      {msg && <p>{msg}</p>}
+    <div className="w-full max-w-md mx-auto bg-white p-6 rounded-xl shadow-md mt-6">
+      <h3 className="text-3xl font-bold text-brandnavy mb-4 text-center"> 
+      Set up MFA (TOTP) </h3>
+      {msg && <p
+      className="mb-4 text-red-600 text-sm font-medium text-center">{msg}</p>}
       {qrUrl ? (
         <>
-          <img src={qrUrl} alt="Scan with your authenticator app" />
-          <form onSubmit={activate} style={{ marginTop: 12 }}>
+          <div className="flex justify-center mb-4">
+          <img 
+          src={qrUrl} 
+          alt="Scan with your authenticator app" 
+          className="w-48 h-48 border border-gray-300 rounded-lg shadow"/>
+          </div>
+          <form onSubmit={activate} className="flex flex-col items-center gap-4">
             <input
               inputMode="numeric"
               pattern="\d{6}"
@@ -76,13 +83,18 @@ export default function MfaSetup() {
               onChange={(e) =>
                 setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
               }
-              required
+              required className="w-40 p-2 border border-gray-300 rounded-lg text-center 
+              focus:outline-none focus:ring-2 focus:ring-brandnavy"
             />
-            <button type="submit">Activate</button>
+            <button type="submit" 
+            className="w-40 bg-brandnavy text-white py-2 rounded-lg font-semibold 
+            hover:bg-opacity-90 transition disabled:opacity-60">
+              Activate</button>
           </form>
         </>
       ) : (
-        <p>Preparing your QR..</p>
+        <p className="text-gray-600 text-center">
+          Preparing your QR..</p>
       )}
     </div>
   );

@@ -3,10 +3,8 @@
 import React from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import { validate as validateEmail } from "email-validator";
-import { apiFetch, removeToken } from "../utils/auth.js";
-import { clearSecretKey } from "../store/keySlice.js";
+import { apiFetch, logout } from "../utils/auth.js";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -14,7 +12,7 @@ export default function LoginForm() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+
 
   // Navigate to registration page
   const registerButton = () => {
@@ -70,13 +68,8 @@ export default function LoginForm() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem("login_username", emailNorm);
-
-        // Store master password for client-side encryption/decryption
-        // Note: This is stored in localStorage for the session
-        // It will be cleared on logout
-        localStorage.setItem("masterPassword", password);
-
+        localStorage.setItem("login_username", emailNorm);         
+        
         // Navigate to verify page
         navigate("/verify_mfa");
       } else {
@@ -98,12 +91,8 @@ export default function LoginForm() {
   };
 
   const handleLogout = () => {
-    // Clear JWT token using utility function
-    removeToken();
-    // Clear the redux secret key
-    dispatch(clearSecretKey());
-    // Clear master password from localStorage
-    localStorage.removeItem("masterPassword");
+    // Call logout request
+    logout(null);
     setMessage("You have been logged out.");
     // Reset form fields
     setEmail("");
@@ -111,20 +100,13 @@ export default function LoginForm() {
   };
 
   return (
-    <form
-      onSubmit={submit}
-      className="max-w-sm mx-auto mt-10 p-6 bg-white border border-gray-200 shadow-md rounded-xl"
-    >
-      {message && (
-        <p className="mb-4 text-red-600 text-sm font-medium">{message}</p>
-      )}
+    <form onSubmit={submit} 
+    className="max-w-sm mx-auto mt-10 p-6 bg-white border border-gray-200 shadow-md rounded-xl">
+      {message && <p className="mb-4 text-red-600 text-sm font-medium">
+        {message}</p>}
 
-      <label
-        htmlFor="email"
-        className="block text-brandnavy font-semibold mb-1"
-      >
-        Email
-      </label>
+      <label htmlFor="email"  className="block text-brandnavy font-semibold mb-1">
+        Email</label>
       <br />
       <input
         id="email"
@@ -137,12 +119,8 @@ export default function LoginForm() {
       <br />
       <br />
 
-      <label
-        htmlFor="password"
-        className="block text-brandnavy font-semibold mb-1"
-      >
-        Password
-      </label>
+      <label htmlFor="password" className="block text-brandnavy font-semibold mb-1">
+        Password</label>
       <br />
       <input
         id="password"
@@ -156,19 +134,13 @@ export default function LoginForm() {
       <br />
       <br />
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full bg-brandnavy text-white py-2 rounded-lg font-semibold hover:bg-opacity-90 disabled:opacity-60"
-      >
+      <button type="submit" disabled={submitting}
+      className="w-full bg-brandnavy text-white py-2 rounded-lg font-semibold hover:bg-opacity-90 disabled:opacity-60">
         {submitting ? "Signing in..." : "Sign in"}
       </button>
 
-      <button
-        type="button"
-        onClick={registerButton}
-        className="w-full mt-3 py-2 border border-brandnavy text-brandnavy rounded-lg font-semibold hover:bg-brandnavy hover:text-white transition"
-      >
+      <button type="button" onClick={registerButton}
+      className="w-full mt-3 py-2 border border-brandnavy text-brandnavy rounded-lg font-semibold hover:bg-brandnavy hover:text-white transition">
         Register
       </button>
 
