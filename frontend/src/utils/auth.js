@@ -125,11 +125,40 @@ export const authenticatedFetch = async (url, options = {}) => {
 };
 
 /**
- * Logout user by removing token and redirecting
- * @param {Function} navigate - Optional navigate function for redirecting
+ * Send logout request to backend 
+ * @returns {Promise} 
  */
-export const logout = (navigate = null) => {
+export const logoutRequest = async () => {
+  const token = getToken();
+  if (!token) return { success: true }; 
+
+  try {
+    const response = await apiFetch("/users/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jwt: token }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    return { success: response.ok, ...data };
+
+  } catch (error) {
+    console.error("Logout request failed:", error);
+    return { success: false, error: "Logout request failed" };
+  }
+};
+
+/** 
+ * Logout user by sending logout request, removing token, and redirecting  
+ * @param {Function} navigate - Optional navigate function for redirecting 
+*/
+export const logout = async (navigate = null) => {
+  await logoutRequest();
+
   removeToken();
+
+  // Redirect if provided
   if (navigate) {
     navigate("/login");
   }

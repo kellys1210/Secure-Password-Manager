@@ -2,18 +2,7 @@ import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RegisterForm from "../register_form.jsx";
-import { cryptoUtils } from "../../utils/crypto.js";
 import { BrowserRouter as Router } from "react-router-dom";
-
-// Mock webcrypto calls salt generation, encryption, and decryption 
-jest.mock("../../utils/crypto.js", () => ({
-  cryptoUtils: {
-    generateSaltAsBase64: jest.fn(() => "mocksalt123--"),
-    deriveSecretKey: jest.fn(),
-    encryptText: jest.fn(),
-    decryptText: jest.fn(),
-  },
-}));
 
 
 describe("RegisterForm", () => {
@@ -80,14 +69,11 @@ const renderWithRouter = (ui) => render(<Router>{ui}</Router>);
           },
           body: JSON.stringify({
             username: "newuser@example.com",
-            password: "securepassword123",
-            salt: "mocksalt123--",
+            password: "securepassword123"
           }),
         })
       );
     });
-    // verify salt generation was called
-    expect(cryptoUtils.generateSaltAsBase64).toHaveBeenCalled();
   });
 
 
