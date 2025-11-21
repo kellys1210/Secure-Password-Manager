@@ -4,6 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { BrowserRouter as Router } from "react-router-dom";
 import LoginForm from "../login_form.jsx";
 
+// Mock getEnvVar for api URL
+jest.mock("../../utils/env.js", () => ({
+  getEnvVar: () => "http://localhost:8080"
+}));
 
 describe("LoginForm", () => {
   beforeEach(() => {
