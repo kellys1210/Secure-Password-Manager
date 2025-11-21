@@ -15,7 +15,7 @@
 # API proxy for backend communication
 [[redirects]]
   from = "/api/*"
-  to = "https://password-manager-backend-ts4ajixepa-uw.a.run.app/:splat"
+  to = "https://backend-163526067001.us-west1.run.app/:splat"
   status = 200
   force = true
 
@@ -35,7 +35,7 @@
     Cache-Control = "public, max-age=31536000, immutable"
 
 [context.production]
-  environment = { VITE_API_URL = "https://password-manager-backend-ts4ajixepa-uw.a.run.app" }
+  environment = { VITE_API_URL = "https://backend-163526067001.us-west1.run.app" }
 
 [context.deploy-preview]
-  environment = { VITE_API_URL = "https://password-manager-backend-ts4ajixepa-uw.a.run.app" }
+  environment = { VITE_API_URL = "https://backend-163526067001.us-west1.run.app" }
