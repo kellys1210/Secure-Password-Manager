@@ -12,7 +12,6 @@ export const createOrUpdatePassword = async ({
   application,
   application_username,
   password,
-  id = null,
 }) => {
   const jwt = getToken();
 
