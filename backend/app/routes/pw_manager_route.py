@@ -58,8 +58,8 @@ def add_update_password():
             return jsonify({"error": "User not found"}), 404
 
         # Check if application username and password are valid before storing or updating in the database
-        if (not ivs.is_valid_master_username(application_username)
-                or not ivs.is_valid_master_password(password)
+        if (not ivs.is_valid_application_username(application_username)
+                or not ivs.is_valid_application_password(password)
                 or not ivs.is_valid_application_name(application_name)):
             return jsonify({"error": "Application name, username, or password are invalid"}), 400
 
