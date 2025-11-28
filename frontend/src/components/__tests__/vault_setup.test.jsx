@@ -9,7 +9,6 @@ import { createOrUpdatePassword, deletePassword,
 import { isAuthenticated, logout } from "../../utils/auth.js";
 import { decryptPassword, encryptPassword, 
          validateMasterPassword } from "../../utils/crypto.js";
-import { validate as validateEmail } from "email-validator";
 import { checkPasswordStrength, generatePassword } from "../password_strength.jsx";
 
 // Mock getEnvVar for api URL
@@ -37,10 +36,6 @@ jest.mock("../../utils/crypto.js", () => ({
     validateMasterPassword: jest.fn(),
 }));
 
-// Mock email validator
-jest.mock("email-validator", () => ({
-    validate: jest.fn(),
-}));
 
 // Mock React Router navigation
 const mockedNavigate = jest.fn();
@@ -106,7 +101,6 @@ describe("VaultSetup", () => {
         validateMasterPassword.mockResolvedValue(true);
         encryptPassword.mockResolvedValue("encrypted-string");
         decryptPassword.mockResolvedValue("decrypted-password");
-        validateEmail.mockReturnValue(true);
     });
 
     // Helper to get past the unlock vault

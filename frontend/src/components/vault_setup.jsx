@@ -17,7 +17,6 @@ import { EyeIcon, EyeSlashIcon,
         } from"@heroicons/react/24/outline";
 import { PlusCircleIcon } from "@heroicons/react/24/solid";        
 import UnlockVault from "./unlock_vault.jsx";
-import { validate as validateEmail } from "email-validator";
 import { checkPasswordStrength, 
          generatePassword } from "./password_strength.jsx";  
 
@@ -143,11 +142,6 @@ export default function VaultSetup () {
         setMessage("All fields are required.");
         return;
       }
-
-      if (!validateEmail(applicationUsername.trim())) {
-        setMessage("Username must be a valid email address.");
-        return;
-      }
   
       setSubmitting(true);
   
@@ -232,11 +226,6 @@ export default function VaultSetup () {
           setMessage("All fields are required to save edit.");
           return;
         }    
-
-        if (!validateEmail(editValues.username.trim())) {
-          setMessage("Username must be a valid email address.");
-          return;
-        }
   
         const encrypted = await encryptPassword(editValues.password, vaultKey);
   
